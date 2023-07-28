@@ -24,13 +24,10 @@ INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}
 
 PARAMETER {
 	v (mV)
-	celsius = 37	(degC)
 	dt (ms)
 	gnabar=.20 (mho/cm2)
 	gkbar=.12 (mho/cm2)
 	gl=.0001 (mho/cm2)
-	ena = 40 (mV)
-	ek = -80 (mV)
 	el = -70.0 (mV)	: steady state at v = -65 mV
 	taum=0.05
 	tauh=0.5
@@ -49,6 +46,8 @@ ASSIGNED {
 	ina (mA/cm2)
 	ik (mA/cm2)
 	il (mA/cm2)
+        ek (mV)
+        ena (mV)
 
 }
 

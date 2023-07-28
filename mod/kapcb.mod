@@ -5,7 +5,7 @@ TITLE K-A channel from Klee Ficker and Heinemann
 
 NEURON {
 	SUFFIX kapcb
-	USEION k READ ko, ki WRITE ik		:Changed from READ ek, 23/04/2010,Nassi
+	USEION k READ ek WRITE ik		
         RANGE gkabar, ik
         :GLOBAL ninf,linf,taul,taun,lmin
 }
@@ -45,8 +45,6 @@ ASSIGNED {       :parameters needed to solve DE
         linf      
         taul            (ms)
         taun            (ms)
-	ko		(mM)
-	ki		(mM)
 }
 
 STATE {          :the unknown parameters to be solved in the DEs 
@@ -64,7 +62,6 @@ INITIAL {		:initialize the following parameter using rates()
 
 BREAKPOINT {
 	SOLVE states METHOD cnexp
-	ek=25*log(ko/ki)			:Changed, added, 23/04/2010, Nassi
 	ik = gkabar*n*l*(v-ek)
 }
 

@@ -24,7 +24,6 @@ NEURON {
 PARAMETER {
     v                   (mV)
     celsius             (degC)
-    ena                 (mV)        : must be explicitly def. in hoc
 
     sh      = 0         (mV)
     gbar    = 0.010     (mho/cm2)
@@ -58,6 +57,7 @@ UNITS {
 
 ASSIGNED {
     ina         (mA/cm2)
+    ena		(mV)
     g           (mho/cm2)
     minf
     hinf

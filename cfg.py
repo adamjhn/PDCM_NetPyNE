@@ -3,10 +3,12 @@ NetPyNE version of Potjans and Diesmann thalamocortical network
 
 cfg.py -- contains the simulation configuration (cfg object)
 
+Modified to include RxD for K, Na, Cl and O2.
+
 '''
 
 from netpyne import specs
-
+import numpy as np
 
 ############################################################
 #
@@ -35,8 +37,56 @@ cfg.gatherOnlySimData = False  #Original
 # set the following 3 options to False when running large-scale versions of the model (>50% scale) to save memory
 cfg.saveCellSecs = True 
 cfg.saveCellConns = True
-cfg.createPyStruct = True     
+cfg.createPyStruct = True
 
+ # Network dimensions
+cfg.sizeX = 242.0 #250.0 #1000
+cfg.sizeY = 1470.0 #250.0 #1000
+cfg.sizeZ = 242.0 #200.0
+cfg.density = 90000.0
+cfg.Vtissue = cfg.sizeX * cfg.sizeY * cfg.sizeZ
+cfg.borderX = [0, 72.960082572]
+cfg.borderY = [-119.72972477280001, 189.30002448484998]
+cfg.borderZ = [0, 0]
+
+# slice conditions 
+cfg.ox = 'perfused'
+if cfg.ox == 'perfused':
+    cfg.o2_bath = 0.1
+    cfg.alpha_ecs = 0.2 
+    cfg.tort_ecs = 1.6
+elif cfg.ox == 'hypoxic':
+    cfg.o2_bath = 0.01
+    cfg.alpha_ecs = 0.07 
+    cfg.tort_ecs = 1.8
+
+cfg.sa2v = 3.0 # False
+
+cfg.betaNrn = 0.24
+cfg.Ncell = int(cfg.density*(cfg.sizeX*cfg.sizeY*cfg.sizeZ*1e-9)) # default 90k / mm^3
+if cfg.density == 90000.0:
+    cfg.rs = ((cfg.betaNrn * cfg.Vtissue) / (2 * np.pi * cfg.Ncell)) ** (1/3)
+else:
+    cfg.rs = 7.52
+
+cfg.epas = -70 # False
+cfg.gpas = 0.0001
+cfg.sa2v = 3.0 # False
+if cfg.sa2v:
+    cfg.somaR = (cfg.sa2v * cfg.rs**3 / 2.0) ** (1/2)
+else:
+    cfg.somaR = cfg.rs
+cfg.cyt_fraction = cfg.rs**3 / cfg.somaR**3
+cfg.cyt_fraction = cfg.rs**3 / cfg.somaR**3
+
+# sd init params 
+cfg.k0 = 3.5
+cfg.r0 = 100.0
+
+
+# BPO config
+cfg.update_params = True
+cfg.secmap = {'somatic':['soma'], 'apical':['Adend1','Adend2','Adend3'], 'axonal':['axon'], 'basal':['Bdend']}
 
 ###########################################################
 # Network Options

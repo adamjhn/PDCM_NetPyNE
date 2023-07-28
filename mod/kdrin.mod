@@ -2,7 +2,7 @@
 
 NEURON {
 	SUFFIX kdrin
-	USEION k READ ki, ko WRITE ik
+	USEION k READ ek WRITE ik
 	RANGE gkdrbar, ik, gk
 	
 }
@@ -32,8 +32,6 @@ ASSIGNED {
 	tau (ms)
 	gk (mho/cm2)
 	ek (mV)
-	ki (mM)
-	ko (mM)
 
 }
 
@@ -46,7 +44,6 @@ INITIAL {
 BREAKPOINT {
 	SOLVE states METHOD cnexp
 	gk= gkdrbar*n*n*n*n
-	ek = 25 * log(ko/ki)
 	ik = gk*(v-ek)
 	
 }

@@ -20,7 +20,6 @@ UNITS {
 :INDEPENDENT {t FROM 0 TO 1 WITH 100 (ms)}
 
 PARAMETER {              
-        ena    = 55    (mV)
         ehi     = -10   (mV)
 	K      = 10.0   (mV)
 	gbar   = 0     (mho/cm2)  : initialize conductance to zero

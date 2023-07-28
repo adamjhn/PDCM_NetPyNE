@@ -28,6 +28,7 @@ class RxDCellModel(CellModel):
         multiCompartmentReactions=None,
         rates=None,
         constants=None,
+        initFunc=None,
     ):
 
         """Constructor
@@ -70,8 +71,10 @@ class RxDCellModel(CellModel):
         self._rxdRegions = {}
         self._rxdSpecies = {}
         self._rxdStates = {}
+        self._rxdParameters = {}
         self._rxdReactions = {}
         self._rxdRates = {}
+        self.initFunc = initFunc
 
     def instantiate(self, sim=None):
         super(RxDCellModel, self).instantiate(sim)
@@ -79,6 +82,11 @@ class RxDCellModel(CellModel):
         # Parse dicts to rxd models based on
         # https://github.com/suny-downstate-medical-center/netpyne/blob/development
         # netpyne/network/netrxd.py
+
+        # constants should be changed before they are used in the model
+        for param in self.params.values():
+            if hasattr(param, "doInstantiate") and isinstance(param, RxDConstantParameter):
+                param.doInstantiate(self)
 
         if self.rxdRegions is not None:
             self.addRegions()
@@ -96,8 +104,10 @@ class RxDCellModel(CellModel):
             self.addRates()
 
         for param in self.params.values():
-            if hasattr(param, "doInstantiate"):
+            if hasattr(param, "doInstantiate") and not isinstance(param, RxDConstantParameter):
                 param.doInstantiate(self)
+        if self.initFunc is not None:
+            self.initFunc(secs=self.icell.all)
 
     def _replaceRxDStr(
         self, origStr, constants=True, regions=True, species=True, parameters=True
@@ -140,7 +150,6 @@ class RxDCellModel(CellModel):
 
         # Place longer ones first to keep shorter substrings from matching where the longer ones should take place
         substrs = sorted(mapping, key=len, reverse=True)
-
         # Create a big OR regex that matches any of the substrings to replace
         regexp = re.compile("|".join(map(re.escape, substrs)))
 
@@ -228,7 +237,7 @@ class RxDCellModel(CellModel):
         elif state:
             afterDefStr = 'self.rxdStates["%s"]["initialFunc"] = initial' % (label)
         elif parameter:
-            afterDefStr = 'self.rxdParameter["%s"]["valueFunc"] = initial' % (label)
+            afterDefStr = 'self.rxdParameters["%s"]["valueFunc"] = initial' % (label)
         funcStr = "def initial (node): \n%s \n return %s \n%s" % (
             importStr,
             funcStr,
@@ -241,12 +250,12 @@ class RxDCellModel(CellModel):
             elif state:
                 initial = self.rxdStates[label]["initialFunc"]
             elif parameter:
-                initial = self.rxdParameter[label]["valueFunc"]
+                initial = self.rxdParameters[label]["valueFunc"]
         except:
             rxdType = "Species" if species else ("State" if state else "Parameter")
             print(
                 '  Error creating %s %s: cannot evaluate "initial" expression -- "%s"'
-                % (rxdType, label, param["initial"])
+                % (rxdType, label, initial)
             )
         return initial
 
@@ -317,7 +326,6 @@ class RxDCellModel(CellModel):
             )
 
     def addStates(self):
-
         # -----------------------------------------------------------------------------
         # Add RxD state
         # -----------------------------------------------------------------------------
@@ -372,12 +380,12 @@ class RxDCellModel(CellModel):
                 name=name,
             )
 
-    def addParameter(self):
+    def addParameters(self):
 
         # -----------------------------------------------------------------------------
         # Add RxD parameter
         # -----------------------------------------------------------------------------
-        for label, param in self.parameters.items():
+        for label, param in self.rxdParameters.items():
             # regions
             if "regions" not in param:
                 print(
@@ -388,7 +396,7 @@ class RxDCellModel(CellModel):
             if not isinstance(param["regions"], list):
                 param["regions"] = [param["regions"]]
             try:
-                nrnRegions = [self.__rxdRegions[region] for region in param["regions"]]
+                nrnRegions = [self._rxdRegions[region] for region in param["regions"]]
             except:
                 print(
                     "  Error creating Species %s: could not find regions %s"
@@ -397,13 +405,13 @@ class RxDCellModel(CellModel):
 
             # initial
             if "value" not in param:
-                value = None
-            elif isinstance(param["value"], basestring):
-                value = self._parseInitStr(
-                    label=label, initial=param["value"], parameter=True
-                )
+                value = param["initial"] if "initial" in param else None
             else:
                 value = param["value"]
+            if isinstance(value, basestring):
+                value = self._parseInitStr(
+                    label=label, initial=value, parameter=True
+                )
 
             # atolscale
             if "atolscale" not in param:
@@ -415,9 +423,8 @@ class RxDCellModel(CellModel):
                 name = param["name"]
 
             # call rxd method to create Parameter
-            self._rxdParameter[name] = rxd.Parameter(
+            self._rxdParameters[name] = rxd.Parameter(
                 regions=nrnRegions,
-                charge=param["charge"],
                 value=value,
                 atolscale=param["atolscale"],
                 name=name,
@@ -437,7 +444,6 @@ class RxDCellModel(CellModel):
         )
 
         for label, param in reactDict.items():
-
             dynamicVars = {"rxdmath": rxd.rxdmath, "rxd": rxd, "self": self}
 
             # reactant
@@ -658,7 +664,6 @@ class RxDReactionParameter(Parameter):
     def instantiate(self, sim=None, icell=None, params=None):
         self.icell = icell
         self.params = params
-        print(self, params)
         # rxd parameters are set _after_ the rxd species are created
         if hasattr(self, "cell_model") and self.cell_model is not None:
             doInstantiate(self.cell_model)
@@ -803,8 +808,8 @@ class RxDParameterParameter(Parameter):
                 'RxDParameterParameter: impossible to instantiate parameter "%s" '
                 "without value" % self.name
             )
-        if self.parameter_name in cell_model._rxdParameter:
-            param = cell_model._rxdParameter[self.parameter_name]
+        if self.parameter_name in cell_model._rxdParameters:
+            param = cell_model._rxdParameters[self.parameter_name]
         else:
             raise Exception(
                 'RxDSpeciesParameter: impossible to instantiate parameter "%s" '
@@ -817,6 +822,47 @@ class RxDParameterParameter(Parameter):
             )
         else:
             param.value = self.value
+
+    def destroy(self, sim=None):
+        """Remove parameter from the simulator"""
+        pass
+
+
+class RxDConstantParameter(Parameter):
+    def __init__(
+        self,
+        name,
+        value=None,
+        frozen=False,
+        bounds=None,
+        param_name=None,
+        param_dependencies=None,
+    ):
+        super(RxDConstantParameter, self).__init__(
+            name, frozen=frozen, bounds=bounds, param_dependencies=param_dependencies
+        )
+        self.param_name = param_name 
+
+    def instantiate(self, sim=None, icell=None, params=None):
+        self.icell = icell
+        self.params = params
+
+        if hasattr(self, "cell_model") and self.cell_model is not None:
+            doInstantiate(self.cell_model)
+
+    def doInstantiate(self, cell_model):
+        self.cell_model = cell_model
+        if self.value is None:
+            raise Exception(
+                'RxDConstantParameter: impossible to instantiate parameter "%s" '
+                "without value" % self.name
+            )
+        if self.param_name in cell_model.rxdConstants:
+            cell_model.rxdConstants[self.param_name] = self.value
+        else:
+            raise Exception(
+                'RxDConstantParameter: constant "%s" is not defined.' % self.name
+            )
 
     def destroy(self, sim=None):
         """Remove parameter from the simulator"""
