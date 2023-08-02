@@ -166,9 +166,6 @@ for lockey, s in locs.items():
             )
         for k, v in mparams.items():
             # optimize conductance parameters
-            # exclude pas -- set according to RMP
-            if mech == "pas":
-                continue
             if k.startswith("g"):
                 bpo_params[
                     f"{k}_{mech}.{lockey}"
@@ -753,14 +750,14 @@ cell_evaluator = ephys.evaluators.CellEvaluator(
 )
 
 optimisation = bpop.optimisations.DEAPOptimisation(
-    evaluator=cell_evaluator, map_function=mapper, offspring_size=8
+    evaluator=cell_evaluator, map_function=mapper, offspring_size=512
 )
 
-final_pop, hall_of_fame, logs, hist = optimisation.run(max_ngen=8)
-# continue_cp=False, cp_filename="checkpoints/MCMultiOpt.pkl"
-# )
+final_pop, hall_of_fame, logs, hist = optimisation.run(max_ngen=4,
+    continue_cp=False, cp_filename="checkpoints/MCMultiStart.pkl"
+)
 
-data = pickle.load(open("checkpoints/MCMultiOpt.pkl", "rb"))
+data = pickle.load(open("checkpoints/MCMultStart.pkl", "rb"))
 hof = data["halloffame"]
 log = data["logbook"]
 best_ind_dict = cell_evaluator.param_dict(hof[0])
