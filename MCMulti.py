@@ -13,13 +13,10 @@ from bpoRxD import (
     RxDReactionParameter,
     RxDConstantParameter,
 )
-from matplotlib import pyplot
 from neuron.units import mM, sec, ms
 
-pyplot.ion()
 import efel
 from datetime import datetime
-
 rc = Client(profile="slurm_fs")
 lview = rc.load_balanced_view()
 count = 0
@@ -35,7 +32,6 @@ def mapper(func, it):
 
 
 print("Connected", rc.ids)
-
 
 class NrnVecStimStimulus(ephys.stimuli.SynapticStimulus):
 
@@ -753,11 +749,11 @@ optimisation = bpop.optimisations.DEAPOptimisation(
     evaluator=cell_evaluator, map_function=mapper, offspring_size=512
 )
 
-final_pop, hall_of_fame, logs, hist = optimisation.run(max_ngen=4,
-    continue_cp=False, cp_filename="checkpoints/MCMultiStart.pkl"
+final_pop, hall_of_fame, logs, hist = optimisation.run(max_ngen=128,
+    continue_cp=False, cp_filename="checkpoints/MCMulti.pkl"
 )
 
-data = pickle.load(open("checkpoints/MCMultStart.pkl", "rb"))
+data = pickle.load(open("checkpoints/MCMulti.pkl", "rb"))
 hof = data["halloffame"]
 log = data["logbook"]
 best_ind_dict = cell_evaluator.param_dict(hof[0])
@@ -772,7 +768,6 @@ from neuron import h, rxd
 from neuron.units import ms, mV
 import numpy as np
 import json
-import matplotlib.pyplot as plt
 import pandas as pd
 plt.ion()
 h.load_file("stdrun.hoc")

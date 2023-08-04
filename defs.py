@@ -20,4 +20,4 @@ def pasInit(secs=None):
                     except:
                         pass
             seg.pas.e = h.v_init + cur / seg.pas.g
-            print(seg, seg.pas.e)
+            #print(seg, seg.pas.e)
