@@ -753,7 +753,7 @@ final_pop, hall_of_fame, logs, hist = optimisation.run(max_ngen=128,
     continue_cp=True, cp_filename="checkpoints/MCMultiStart.pkl"
 )
 
-data = pickle.load(open("checkpoints/MCMultStart.pkl", "rb"))
+data = pickle.load(open("checkpoints/MCMulti.pkl", "rb"))
 hof = data["halloffame"]
 log = data["logbook"]
 best_ind_dict = cell_evaluator.param_dict(hof[0])

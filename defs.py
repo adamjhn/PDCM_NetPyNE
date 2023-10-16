@@ -20,14 +20,4 @@ def pasInit(secs=None):
                     except:
                         pass
             seg.pas.e = h.v_init + cur / seg.pas.g
-            print(seg, seg.pas.e)
-
-def nfunc(v):
-    from neuron import h
-    h.load_file('stdrun.hoc')
-    sec = h.Section()
-    sec.insert('hh')
-    h.finitialize(v)
-    h.continuerun(100)
-    return sec(0.5).v
-
+            #print(seg, seg.pas.e)
