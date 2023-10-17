@@ -1,7 +1,6 @@
 from netpyne import specs
 from netpyne.batch import Batch
 from scipy import stats
-from cfg import cfg
 from neuron import h
 import numpy as np
 import os
