@@ -27,7 +27,7 @@ cfg.duration = 1e3  # Duration of the simulation, in ms
 cfg.dt = 0.025  # Internal integration timestep to use
 cfg.verbose = 0  # Show detailed messages
 cfg.seeds["m"] = 123
-cfg.printPopAvgRates = True
+cfg.printPopAvgRates = False
 cfg.printRunTime = 1
 cfg.hParams["celsius"] = 34
 
@@ -36,7 +36,7 @@ cfg.gatherOnlySimData = False  # Original
 
 # set the following 3 options to False when running large-scale versions of the model (>50% scale) to save memory
 cfg.saveCellSecs = True
-cfg.saveCellConns = True
+cfg.saveCellConns = False
 cfg.createPyStruct = True
 
 # Network dimensions
@@ -91,8 +91,8 @@ cfg.r0 = 100.0
 # cfg.secmap = {'somatic':['soma'], 'apical':['Adend1','Adend2','Adend3'], 'axonal':['axon'], 'basal':['Bdend']}
 
 # Scale synapses weights
-cfg.excWeight = 1.0
-cfg.inhWeight = 1.0
+cfg.excWeight = 0.0
+cfg.inhWeight = 0.0
 
 ###########################################################
 # Network Options
@@ -134,13 +134,19 @@ cfg.simLabel = "pd_mc_scale-%s_DC-%d_TH-%d_Balanced-%d_dur-%d_wscale_%.6g" % (
 
 cfg.recordStep = 0.1  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
-cfg.saveFolder = "dataSS/"
+cfg.saveFolder = "dataSS3/"
 cfg.savePickle = False  # Save params, network and sim output to pickle file
-cfg.saveJson = False
+cfg.saveJson = True
+cfg.saveDataInclude = ["simData", "simConfig"]
 cfg.recordStim = False
 cfg.printSynsAfterRule = False
-# cfg.recordCells = [f'L{i}{ei}_{idx}' for i in [2,4,5,6] for ei in ['e','i'] for idx in range(10)]
-# cfg.recordTraces = {f'{var}_soma':{'sec':'soma','loc':0.5,'var':var} for var in ['v','nai', 'ki', 'cli', 'dumpi']}  # Dict with traces to record
+cfg.recordCells = [
+    f"L{i}{ei}_{idx}" for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
+]
+cfg.recordTraces = {
+    f"{var}_soma": {"sec": "soma", "loc": 0.5, "var": var}
+    for var in ["v", "nai", "ki", "cli", "dumpi"]
+}  # Dict with traces to record
 # cfg.analysis['plotRaster'] = {'saveFig': True}                  # Plot a raster
 # cfg.analysis['plotTraces'] = {'saveFig': True}  # Plot recorded traces for this list of cells
 cfg.recordCellsSpikes = [

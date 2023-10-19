@@ -1,10 +1,9 @@
+import pickle
 from netpyne import specs
 from netpyne.batch import Batch
-from scipy import stats
-from neuron import h
-import numpy as np
-import os
 from vanRossum import d as dist
+import numpy as np
+import cfgSS as cfg
 
 
 def batch():
@@ -16,31 +15,40 @@ def batch():
     # fitness function
     fitnessFuncArgs = {}
     fitnessFuncArgs["maxFitness"] = 1_000_000_000_000
+    fitnessFuncArgs["data"] = pickle.load(
+        open(
+            "/home/ajn48/project/PDCM_NetPyNE/sample_pd_scale-1.0_DC-0_TH-1_Balanced-1_dur-1.pkl",
+            "rb",
+        )
+    )
 
     def fitnessFunc(sd, **kwargs):
         print("calc fitness")
-        spkid = sd["spkid"].as_numpy()
-        spkt = sd["spkt"].as_numpy()
+        spkid = np.array(sd["spkid"])
+        spkt = np.array(sd["spkt"])
         data = kwargs["data"]
         score, rxdscore, o2score = 0, 0, 0
-        for cell in sim.net.cells:
-            if cell.tags["cellModel"] != "VecStim":
-                pop, idx = tags["pop"].split("_")
-                dat = data[pop][idx]
-                idx = cell.gid
-                out = spkt[spkid == cell.gid]
-                exp = data[pop]["output"][idx]
-                score += dist(out, exp, 2.0)
-                soma = cell.secs["soma"]["hObj"]
-                for ion in ["k", "na", "cl"]:
-                    init = netParams.rxdParams["constants"][f"{ion}i_initial"]
-                    val = getattr(soma, f"{ion}i")
-                    rxdscore += abs(init - val) / init
-                o2score = soma.dumpi  # amount of oxygen consumed
+        for gid, cell in enumerate(
+            [
+                f"L{i}{ei}_{idx}"
+                for i in [2, 4, 5, 6]
+                for ei in ["e", "i"]
+                for idx in range(10)
+            ]
+        ):
+            pop, idx = cell.split("_")
+            idx = int(idx)
+            out = spkt[spkid == gid]
+            exp = data[pop]["output"][idx]
+            score += dist(out, exp, 2.0)
+            for ion in ["k", "na", "cl"]:
+                trace = sd[f"{ion}i_soma"][f"cell_{gid}"]
+                rxdscore += abs(trace[0] - trace[-1]) / trace[0]
+            o2score = sd["dumpi_soma"][f"cell_{gid}"][-1]  # amount of oxygen consumed
         print(
             f"score {score}, rxdscore {rxdscore}, o2score {o2score}: {1e3*score + rxdscore + o2score}"
         )
-        return min(kwargs[maxFitness], 1e3 * score + rxdscore + o2score)
+        return min(kwargs["maxFitness"], 1e3 * score + rxdscore + o2score)
 
     # create Batch object with paramaters to modify, and specifying files to use
     b = Batch(params=params, cfgFile="cfgSS.py", netParamsFile="netParamsSS.py")
@@ -69,7 +77,7 @@ def batch():
 """
         #'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
-    b.batchLabel = "test"
+    b.batchLabel = "weightOpt"
     print(f"/vast/palmer/scratch/mcdougal/ajn48/{b.batchLabel}")
     b.saveFolder = "/vast/palmer/scratch/mcdougal/ajn48/" + b.batchLabel
 
