@@ -30,6 +30,7 @@ cfg.seeds["m"] = 123
 cfg.printPopAvgRates = False
 cfg.printRunTime = 1
 cfg.hParams["celsius"] = 34
+cfg.hParams["v_init"] = -70
 
 ### Options to save memory in large-scale ismulations
 cfg.gatherOnlySimData = False  # Original

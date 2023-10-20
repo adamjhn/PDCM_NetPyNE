@@ -19,7 +19,7 @@ import pickle
 # examples of  input/output relation for LIF network model
 data = pickle.load(
     open(
-        "/home/ajn48/project/PDCM_NetPyNE/sample_pd_scale-1.0_DC-0_TH-1_Balanced-1_dur-1.pkl",
+        "sample_pd_scale-1.0_DC-0_TH-1_Balanced-1_dur-1.pkl",
         "rb",
     )
 )
@@ -267,6 +267,23 @@ regions["ecs_o2"] = {
 
 # xregions['mem'] = {'cells' : 'all', 'secs' : 'all', 'nrn_region' : None, 'geometry' : 'membrane'}
 
+
+evaldict = {
+    "vol_ratio[ecs]": "1.0",
+    "vol_ratio[cyt]": "1.0",
+    "rxd.rxdmath": "math",
+    "kki[cyt]": constants["ki_initial"],
+    "kko[ecs]": constants["ko_initial"],
+    "nai[cyt]": constants["nai_initial"],
+    "nao[ecs]": constants["nao_initial"],
+    "cli[cyt]": constants["cli_initial"],
+    "clo[ecs]": constants["clo_initial"],
+    "ngate": n_initial,
+    "mgate": m_initial,
+    "hgate": h_initial,
+}
+
+
 regions["cyt"] = {
     "cells": "all",
     "secs": "all",
@@ -471,6 +488,31 @@ mcReactions["nkcc1_current3"] = {
     "custom_dynamics": True,
     "membrane_flux": True,
 }
+
+
+def initEval(ratestr):
+    for k, v in evaldict.items():
+        ratestr = ratestr.replace(k, str(v))
+    for k, v in constants.items():
+        ratestr = ratestr.replace(k, str(v))
+    return eval(ratestr)
+
+
+min_pmax = f"p_max * ({nkcc1} + {kcc2} + {gk} * (v_initial - {ek})/({volume_scale}))/(2*{pump})"
+pmin = initEval(min_pmax)
+if constants["p_max"] < pmin:
+    print("Pump current is too low to balance K+ currents")
+    print(f"p_max set to {pmin}")
+    constants["p_max"] = pmin
+
+clbalance = f"-((2.0 * {nkcc1} +  {kcc2}) * {volume_scale})/({ecl} - v_initial)"
+kbalance = f"-(({nkcc1} + {kcc2} - 2 * {pump}) * {volume_scale} + ({gk} * (v_initial - {ek})))/(v_initial-{ek})"
+nabalance = f"-(({nkcc1} + 3 * {pump}) * {volume_scale} + ({gna} * (v_initial - {ena})))/(v_initial-{ena})"
+
+constants["gclbar_l"] = initEval(clbalance)
+constants["gkbar_l"] = initEval(kbalance)
+constants["gnabar_l"] = initEval(nabalance)
+
 
 # ## kcc2 (K+/Cl- cotransporter)
 mcReactions["kcc2_current1"] = {
