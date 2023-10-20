@@ -92,8 +92,14 @@ cfg.r0 = 100.0
 # cfg.secmap = {'somatic':['soma'], 'apical':['Adend1','Adend2','Adend3'], 'axonal':['axon'], 'basal':['Bdend']}
 
 # Scale synapses weights
-cfg.excWeight = 0.0
-cfg.inhWeight = 0.0
+cfg.excWeight = 1
+cfg.inhWeight = 1
+cfg.gnabar = 30 / 1000
+cfg.gkbar = 25 / 1000
+cfg.ukcc2 = 0.3
+cfg.unkcc1 = 0.1
+cfg.pmax = 0.8
+
 
 ###########################################################
 # Network Options
