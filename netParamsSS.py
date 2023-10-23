@@ -9,11 +9,18 @@ Modified to include concentration of Na, K, Cl and O2 using RxD.
 
 from netpyne import specs
 import numpy as np
-from cfgSS import cfg
 from neuron.units import sec, mM
 import math
 import json
 import pickle
+
+try:
+    from __main__ import cfg  # import SimConfig object with params from parent module
+except:
+    from cfgSS import (
+        cfg,
+    )  # if no simConfig in parent module, import directly from cfg.py:cfg
+
 
 
 # examples of  input/output relation for LIF network model
@@ -119,8 +126,8 @@ def filterTimes(inputs, weights):
     inp = [inputs[0]]
     wei = [weights[0]]
     for t, w in zip(inputs[1:], weights[1:]):
-        if t - inp[-1] > 1e-9:
-            inp.append(t)
+        if t - inp[-1] - 2 > 1e-9:
+            inp.append(t - 2)
             wei.append(w)
         else:
             wei[-1] += w

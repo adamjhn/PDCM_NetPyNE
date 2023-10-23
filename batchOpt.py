@@ -33,7 +33,7 @@ def batch():
         spkid = np.array(sd["spkid"])
         spkt = np.array(sd["spkt"])
         data = kwargs["data"]
-        score, rxdscore, o2score = 0, 0, 0
+        score, rate, rxdscore, o2score = 0, 0, 0, 0
         for gid, cell in enumerate(
             [
                 f"L{i}{ei}_{idx}"
@@ -46,15 +46,18 @@ def batch():
             idx = int(idx)
             out = spkt[spkid == gid]
             exp = data[pop]["output"][idx]
+            rate += abs(len(exp) - len(out))
             score += dist(out, exp, 2.0)
             for ion in ["k", "na", "cl"]:
                 trace = sd[f"{ion}i_soma"][f"cell_{gid}"]
                 rxdscore += abs(trace[0] - trace[-1]) / trace[0]
-            o2score = sd["dumpi_soma"][f"cell_{gid}"][-1]  # amount of oxygen consumed
+            o2score += sd["dumpi_soma"][f"cell_{gid}"][-1]  # amount of oxygen consumed
         print(
-            f"score {score}, rxdscore {rxdscore}, o2score {o2score}: {1e3*score + rxdscore + o2score}"
+            f"rate{rate} score {score}, rxdscore {rxdscore}, o2score {o2score}: {1e3*score + rxdscore + o2score}"
         )
-        return min(kwargs["maxFitness"], 1e3 * score + rxdscore + o2score)
+        return min(
+            kwargs["maxFitness"], 1e4 * rate + 1e2 * score + 10 * rxdscore + o2score
+        )
 
     # create Batch object with paramaters to modify, and specifying files to use
     b = Batch(params=params, cfgFile="cfgSS.py", netParamsFile="netParamsSS.py")
@@ -83,7 +86,7 @@ def batch():
 """
         #'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
-    b.batchLabel = "weightOpt"
+    b.batchLabel = "weightsRate"
     print(f"/vast/palmer/scratch/mcdougal/ajn48/{b.batchLabel}")
     b.saveFolder = "/vast/palmer/scratch/mcdougal/ajn48/" + b.batchLabel
 
@@ -91,10 +94,10 @@ def batch():
         "fitnessFunc": fitnessFunc,  # fitness expression (should read simData)
         "fitnessFuncArgs": fitnessFuncArgs,
         "maxFitness": fitnessFuncArgs["maxFitness"],
-        "maxiters": 100,  #    Maximum number of iterations (1 iteration = 1 function evaluation)
+        "maxiters": 10000,  #    Maximum number of iterations (1 iteration = 1 function evaluation)
         "maxtime": 8 * 60 * 60,  #    Maximum time allowed, in seconds
-        "maxiter_wait": 60,
-        "time_sleep": 10,
+        "maxiter_wait": 120,
+        "time_sleep": 20,
     }
 
     # Run batch simulations
