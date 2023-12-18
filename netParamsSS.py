@@ -259,10 +259,10 @@ if cfg.DC == False:  # External Input as Poisson
             netParams.connParams[f"poiss->{L[r]}_{idx}"] = {
                 "preConds": {"pop": "poiss" + str(L[r])},
                 "postConds": {"pop": f"{L[r]}_{idx}"},
-                #"connList": auxConn.T,
+                # "connList": auxConn.T,
                 "weight": f"max(0, {cfg.excWeight} * (weightMin+normal(0,dweight*weightMin)))",
                 "delay": 0.5,
-                "synMech" : "exc",
+                "synMech": "exc",
             }  # 1 delay
 
 # Thalamus Input: increased of 15Hz that lasts 10 ms
@@ -287,7 +287,7 @@ if cfg.TH == True:
             netParams.connParams[f"bkg_TH->{L[r]}_{idx}"] = {
                 "preConds": {"pop": "bkg_TH" + str(L[r])},
                 "postConds": {"pop": f"{L[r]}_{idx}"},
-                #"connList": auxConn.T,
+                # "connList": auxConn.T,
                 "weight": f"max(0, {cfg.excWeight} * (weightMin +normal(0,dweight*weightMin)))",
                 "synMech": "exc",
                 "delay": 0.5,

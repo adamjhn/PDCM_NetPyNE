@@ -37,7 +37,7 @@ cfg.gatherOnlySimData = False  # Original
 
 # set the following 3 options to False when running large-scale versions of the model (>50% scale) to save memory
 cfg.saveCellSecs = True
-cfg.saveCellConns = False
+cfg.saveCellConns = True
 cfg.createPyStruct = True
 
 # Network dimensions
@@ -73,7 +73,8 @@ else:
     cfg.rs = 7.52
 
 cfg.epas = -70  # False
-cfg.gpas = 0.0001
+cfg.Cm = 1.0
+cfg.Ra = 100
 cfg.sa2v = 3.0  # False
 if cfg.sa2v:
     cfg.somaR = (cfg.sa2v * cfg.rs**3 / 2.0) ** (1 / 2)
@@ -92,15 +93,81 @@ cfg.r0 = 100.0
 # cfg.secmap = {'somatic':['soma'], 'apical':['Adend1','Adend2','Adend3'], 'axonal':['axon'], 'basal':['Bdend']}
 
 # Scale synapses weights
-cfg.excWeight = 1
-cfg.inhWeight = 1
+cfg.excWeight = 1.5e-9
+cfg.inhWeight = 1.5e-9
 cfg.gnabar = 30 / 1000
 cfg.gkbar = 25 / 1000
 cfg.ukcc2 = 0.3
 cfg.unkcc1 = 0.1
-cfg.pmax = 0.8
+cfg.pmax = 3
+cfg.gpas = 0.0001
+cfg.gkleak_scale = 0.25
 
+# parameters from Optuna (trial_2316_data.json)
+"""
+cfg.excWeight = 0.0016284565367175549
+cfg.inhWeight = 0.006192991751141277
+cfg.gnabar = 0.1267443756284917
+cfg.gkbar = 0.031614843502903
+cfg.ukcc2 = 0.13032458638156022
+cfg.unkcc1 = 0.2220562337956713
+cfg.pmax = 148.04870571392848
+cfg.gkleak_scale = 1
+"""
 
+"""
+cfg.excWeight = 0.0016284565367175549
+cfg.inhWeight = 0.006192991751141277
+cfg.gnabar = 0.1267443756284917
+cfg.gkbar = 0.02831647633455964
+cfg.ukcc2 = 0.1118070411057513
+cfg.unkcc1 = 0.22615588240354906
+cfg.pmax = 195.02395622464653
+"""
+"""
+cfg.excWeight = 0.0016284565367175549
+cfg.inhWeight = 0.006192991751141277
+cfg.gnabar = 0.1267443756284917
+cfg.gkbar = 0.00977599492202463
+cfg.ukcc2 = 0.21023512248902615
+cfg.unkcc1 = 0.17267570074457672
+cfg.pmax = 504.8300354550303
+cfg.gpas = 0.0002543264356912205
+cfg.gkleak_scale = 0.6861753026497637
+"""
+
+"""
+cfg.excWeight = 0.0016284565367175549
+cfg.inhWeight = 0.006192991751141277
+cfg.gnabar = 0.1267443756284917
+cfg.gkbar = 0.0020167269675654825
+cfg.ukcc2 = 0.13032458638156022
+cfg.unkcc1 = 0.2220562337956713
+cfg.pmax = 519.0169549344427
+cfg.gpas = 0.0003930421048593283
+cfg.gkleak_scale = 1 - (1-0.6855074966613219)
+
+cfg.excWeight = 0.0016284565367175549
+cfg.inhWeight = 0.006192991751141277
+cfg.gnabar = 0.1267443756284917
+cfg.gkbar = 0.0003126247439529106
+cfg.ukcc2 = 0.13032458638156022
+cfg.unkcc1 = 0.2220562337956713
+cfg.pmax = 171.02755183037405
+cfg.gpas = 0.00047798767069961014
+cfg.gkleak_scale = 0.8213720820402047
+"""
+
+"""
+cfg.excWeight = 0.002521859124930159
+cfg.inhWeight = 0.0048906879089841105
+cfg.gnabar = 0.17571338487595745
+cfg.gkbar = 4.862021799740998
+cfg.ukcc2 = 0.2833093574884574
+cfg.unkcc1 = 0.2802516889221184
+cfg.pmax = 110.09281430636956
+cfg.gkleak_scale = 0.00026581363845333203
+"""
 ###########################################################
 # Network Options
 ###########################################################
@@ -112,7 +179,7 @@ cfg.pmax = 0.8
 # DC=False ; TH=True;  Balanced=True   => Figure 10A. But I want a partial reproduce so I guess Figure 10C is not necessary
 
 # Size of Network. Adjust this constants, please!
-cfg.ScaleFactor = 0.01  # 1.0 = 80.000
+cfg.ScaleFactor = 0.16  # 1.0 = 80.000
 
 # External input DC or Poisson
 cfg.DC = False  # True = DC // False = Poisson
@@ -123,6 +190,7 @@ cfg.TH = False  # True = on // False = off
 # Balanced and Unbalanced external input as PD article
 cfg.Balanced = True  # True=Balanced // False=Unbalanced
 
+"""
 # Scaling factor for weights when replacing point neurons with multicompartment neurons
 cfg.scaleConnWeight = 0.000001
 
@@ -134,18 +202,20 @@ cfg.simLabel = "pd_mc_scale-%s_DC-%d_TH-%d_Balanced-%d_dur-%d_wscale_%.6g" % (
     int(cfg.duration / 1e3),
     cfg.scaleConnWeight,
 )
+"""
+cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeight}2"
 
 ###########################################################
 # Recording and plotting options
 ###########################################################
 
-cfg.recordStep = 0.1  # Step size in ms to save data (e.g. V traces, LFP, etc)
+cfg.recordStep = 1  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
 cfg.saveFolder = "dataSS3/"
 cfg.savePickle = False  # Save params, network and sim output to pickle file
 cfg.saveJson = True
 cfg.saveDataInclude = ["simData", "simConfig"]
-cfg.recordStim = False
+cfg.recordStim = True
 cfg.printSynsAfterRule = False
 cfg.recordCells = [
     f"L{i}{ei}_{idx}" for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)

@@ -14,10 +14,10 @@ import numpy as np
 #               Create network and run simulation
 ############################################################
 
+
 def fi(cells):
     """set steady state RMP for 1 cell"""
     for c in cells:
-
         # skip artificial cells
         if not hasattr(c.secs, "soma"):
             continue
@@ -36,6 +36,7 @@ def fi(cells):
                 * seg.taur_cadad
             )
 
+
 simConfig, netParams = sim.readCmdLineArgs(
     simConfigDefault="cfgSS.py", netParamsDefault="netParamsSS.py"
 )
@@ -45,7 +46,7 @@ sim.initialize(
 sim.net.createPops()  # instantiate network populations
 sim.net.createCells()  # instantiate network cells based on defined populations
 sim.net.addStims()  # add network stimulation
-#fih = [h.FInitializeHandler(2, lambda: fi(sim.net.cells))]
+# fih = h.FInitializeHandler(2, lambda: fi(sim.net.cells))
 sim.net.addRxD(nthreads=6)
 """
 df = pd.read_json('PDMCExample.json')

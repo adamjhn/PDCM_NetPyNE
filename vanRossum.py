@@ -1,5 +1,6 @@
 import math
 
+
 def d(train_a, train_b, tau):
     """
     Compute the van Rossum metric for two spike trains.
@@ -15,6 +16,7 @@ def d(train_a, train_b, tau):
     trains = [train_a, train_b]
     sq = [norm_train(trains[train_c], tau) for train_c in range(2)]
     return math.sqrt(sq[0] + sq[1] - corr(trains, tau))
+
 
 def d_matrix(trains, tau):
     """
@@ -38,11 +40,14 @@ def d_matrix(trains, tau):
 
     for i in range(trains_size):
         for j in range(i + 1, trains_size):
-            this_d = math.sqrt(sq[i] + sq[j] - corr(trains[i], trains[j], fs[i], fs[j], tau))
+            this_d = math.sqrt(
+                sq[i] + sq[j] - corr(trains[i], trains[j], fs[i], fs[j], tau)
+            )
             d_matrix[i][j] = this_d
             d_matrix[j][i] = this_d
 
     return d_matrix
+
 
 def d_matrix_exp(trains, tau):
     trains_size = len(trains)
@@ -62,9 +67,23 @@ def d_matrix_exp(trains, tau):
 
     for i in range(trains_size):
         for j in range(i + 1, trains_size):
-            this_d = math.sqrt(sq[i] + sq[j] - corr(trains[i], trains[j], fs[i], fs[j], e_poss[i], e_poss[j], e_negs[i], e_negs[j]))
+            this_d = math.sqrt(
+                sq[i]
+                + sq[j]
+                - corr(
+                    trains[i],
+                    trains[j],
+                    fs[i],
+                    fs[j],
+                    e_poss[i],
+                    e_poss[j],
+                    e_negs[i],
+                    e_negs[j],
+                )
+            )
             d_matrix[i][j] = this_d
             d_matrix[j][i] = this_d
+
 
 def d_matrix_no_markage(d_matrix, trains, tau):
     trains_size = len(trains)
@@ -75,6 +94,7 @@ def d_matrix_no_markage(d_matrix, trains, tau):
             this_d = math.sqrt(sq[i] + sq[j] - corr(trains[i], trains[j], tau))
             d_matrix[i][j] = this_d
             d_matrix[j][i] = this_d
+
 
 def d_matrix_no_markage_exp(d_matrix, trains, tau):
     trains_size = len(trains)
@@ -90,9 +110,14 @@ def d_matrix_no_markage_exp(d_matrix, trains, tau):
 
     for i in range(trains_size):
         for j in range(i + 1, trains_size):
-            this_d = math.sqrt(sq[i] + sq[j] - corr(trains[i], trains[j], e_poss[i], e_poss[j], e_negs[i], e_negs[j]))
+            this_d = math.sqrt(
+                sq[i]
+                + sq[j]
+                - corr(trains[i], trains[j], e_poss[i], e_poss[j], e_negs[i], e_negs[j])
+            )
             d_matrix[i][j] = this_d
             d_matrix[j][i] = this_d
+
 
 def norm(fs):
     f_size = len(fs)
@@ -106,6 +131,7 @@ def norm(fs):
         norm += fs[i]
 
     return norm
+
 
 def norm_train(train, tau):
     train_size = len(train)
@@ -121,6 +147,7 @@ def norm_train(train, tau):
 
     return norm
 
+
 def norm_train_exp(train, e_pos, e_neg):
     train_size = len(train)
 
@@ -134,6 +161,7 @@ def norm_train_exp(train, e_pos, e_neg):
             norm += e_pos[i] * e_neg[j]
 
     return norm
+
 
 def corr(trains, tau):
     """
@@ -160,6 +188,7 @@ def corr(trains, tau):
 
     return x
 
+
 def corr_train(train_a, train_b, tau):
     """
     Compute the correlation between two spike trains represented as lists.
@@ -185,6 +214,7 @@ def corr_train(train_a, train_b, tau):
             x += math.exp(-abs(train_a[i] - train_b[j]) / tau)
 
     return x
+
 
 def corr_with_e(train_a, train_b, e_pos_a, e_pos_b, e_neg_a, e_neg_b):
     """
@@ -218,7 +248,10 @@ def corr_with_e(train_a, train_b, e_pos_a, e_pos_b, e_neg_a, e_neg_b):
 
     return x
 
-def corr_with_features(train_a, train_b, f_a, f_b, e_pos_a, e_pos_b, e_neg_a, e_neg_b, tau):
+
+def corr_with_features(
+    train_a, train_b, f_a, f_b, e_pos_a, e_pos_b, e_neg_a, e_neg_b, tau
+):
     """
     Compute the correlation between two spike trains represented as lists with features and exponential terms.
 
@@ -262,4 +295,3 @@ def corr_with_features(train_a, train_b, f_a, f_b, e_pos_a, e_pos_b, e_neg_a, e_
         x += math.exp((train_b[place_in_b] - train_a[i]) / tau) * (1 + f_b[place_in_b])
 
     return x
-

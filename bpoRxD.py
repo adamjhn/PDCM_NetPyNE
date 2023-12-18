@@ -30,7 +30,6 @@ class RxDCellModel(CellModel):
         constants=None,
         initFunc=None,
     ):
-
         """Constructor
 
         Args:
@@ -85,7 +84,9 @@ class RxDCellModel(CellModel):
 
         # constants should be changed before they are used in the model
         for param in self.params.values():
-            if hasattr(param, "doInstantiate") and isinstance(param, RxDConstantParameter):
+            if hasattr(param, "doInstantiate") and isinstance(
+                param, RxDConstantParameter
+            ):
                 param.doInstantiate(self)
 
         if self.rxdRegions is not None:
@@ -104,7 +105,9 @@ class RxDCellModel(CellModel):
             self.addRates()
 
         for param in self.params.values():
-            if hasattr(param, "doInstantiate") and not isinstance(param, RxDConstantParameter):
+            if hasattr(param, "doInstantiate") and not isinstance(
+                param, RxDConstantParameter
+            ):
                 param.doInstantiate(self)
         if self.initFunc is not None:
             self.initFunc(secs=self.icell.all)
@@ -163,7 +166,6 @@ class RxDCellModel(CellModel):
         # Add RxD regions
         # -----------------------------------------------------------------------------
         for label, param in self.rxdRegions.items():
-
             if "extracellular" in param and param["extracellular"] == True:
                 self._rxdRegions[label] = rxd.Extracellular(
                     **{k: v for k, v in param.items() if k != "extracellular"}
@@ -260,7 +262,6 @@ class RxDCellModel(CellModel):
         return initial
 
     def addSpecies(self):
-
         # -----------------------------------------------------------------------------
         # Add RxD species
         # -----------------------------------------------------------------------------
@@ -381,7 +382,6 @@ class RxDCellModel(CellModel):
             )
 
     def addParameters(self):
-
         # -----------------------------------------------------------------------------
         # Add RxD parameter
         # -----------------------------------------------------------------------------
@@ -409,9 +409,7 @@ class RxDCellModel(CellModel):
             else:
                 value = param["value"]
             if isinstance(value, basestring):
-                value = self._parseInitStr(
-                    label=label, initial=value, parameter=True
-                )
+                value = self._parseInitStr(label=label, initial=value, parameter=True)
 
             # atolscale
             if "atolscale" not in param:
@@ -573,7 +571,6 @@ class RxDCellModel(CellModel):
         # -----------------------------------------------------------------------------
 
         for label, param in self.rxdRates.items():
-
             dynamicVars = {"rxdmath": rxd.rxdmath, "rxd": rxd, "self": self}
 
             # species
@@ -841,7 +838,7 @@ class RxDConstantParameter(Parameter):
         super(RxDConstantParameter, self).__init__(
             name, frozen=frozen, bounds=bounds, param_dependencies=param_dependencies
         )
-        self.param_name = param_name 
+        self.param_name = param_name
 
     def instantiate(self, sim=None, icell=None, params=None):
         self.icell = icell
