@@ -93,15 +93,15 @@ cfg.r0 = 100.0
 # cfg.secmap = {'somatic':['soma'], 'apical':['Adend1','Adend2','Adend3'], 'axonal':['axon'], 'basal':['Bdend']}
 
 # Scale synapses weights
-cfg.excWeight = 1.5e-9
-cfg.inhWeight = 1.5e-9
+cfg.excWeight = 1
+cfg.inhWeight = 13.5*cfg.excWeight
 cfg.gnabar = 30 / 1000
 cfg.gkbar = 25 / 1000
 cfg.ukcc2 = 0.3
 cfg.unkcc1 = 0.1
 cfg.pmax = 3
 cfg.gpas = 0.0001
-cfg.gkleak_scale = 0.25
+cfg.gkleak_scale = 1.0 
 
 # parameters from Optuna (trial_2316_data.json)
 """
@@ -209,7 +209,7 @@ cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeight}2"
 # Recording and plotting options
 ###########################################################
 
-cfg.recordStep = 1  # Step size in ms to save data (e.g. V traces, LFP, etc)
+cfg.recordStep = 10  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
 cfg.saveFolder = "dataSS3/"
 cfg.savePickle = False  # Save params, network and sim output to pickle file
