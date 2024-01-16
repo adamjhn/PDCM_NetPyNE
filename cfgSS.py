@@ -31,7 +31,7 @@ cfg.printPopAvgRates = False
 cfg.printRunTime = 1
 cfg.hParams["celsius"] = 34
 cfg.hParams["v_init"] = -70
-
+cfg.Ncells = 10
 ### Options to save memory in large-scale ismulations
 cfg.gatherOnlySimData = False  # Original
 
@@ -45,7 +45,7 @@ cfg.sizeX = 242.0  # 250.0 #1000
 cfg.sizeY = 1470.0  # 250.0 #1000
 cfg.sizeZ = 242.0  # 200.0
 cfg.density = 90000.0
-cfg.Vtissue = cfg.sizeX * cfg.sizeY * cfg.sizeZ
+cfg.Vtissue = 1044329699.0
 cfg.borderX = [0, 72.960082572]
 cfg.borderY = [-119.72972477280001, 189.30002448484998]
 cfg.borderZ = [0, 0]
@@ -64,13 +64,14 @@ elif cfg.ox == "hypoxic":
 cfg.sa2v = 3.0  # False
 
 cfg.betaNrn = 0.24
-cfg.Ncell = int(
-    cfg.density * (cfg.sizeX * cfg.sizeY * cfg.sizeZ * 1e-9)
-)  # default 90k / mm^3
-if cfg.density == 90000.0:
-    cfg.rs = ((cfg.betaNrn * cfg.Vtissue) / (2 * np.pi * cfg.Ncell)) ** (1 / 3)
-else:
-    cfg.rs = 7.52
+#cfg.Ncell = int(
+#    cfg.density * (cfg.sizeX * cfg.sizeY * cfg.sizeZ * 1e-9)
+#)  # default 90k / mm^3
+#if cfg.density == 90000.0:
+cfg.Ncell = 12767
+cfg.rs = ((cfg.betaNrn * cfg.Vtissue) / (2 * np.pi * cfg.Ncell)) ** (1 / 3)
+#else:
+#    cfg.rs = 7.52
 
 cfg.epas = -70  # False
 cfg.Cm = 1.0
@@ -93,7 +94,7 @@ cfg.r0 = 100.0
 # cfg.secmap = {'somatic':['soma'], 'apical':['Adend1','Adend2','Adend3'], 'axonal':['axon'], 'basal':['Bdend']}
 
 # Scale synapses weights
-cfg.excWeight = 1
+cfg.excWeight = 2e-7
 cfg.inhWeight = 13.5*cfg.excWeight
 cfg.gnabar = 30 / 1000
 cfg.gkbar = 25 / 1000
@@ -101,7 +102,8 @@ cfg.ukcc2 = 0.3
 cfg.unkcc1 = 0.1
 cfg.pmax = 3
 cfg.gpas = 0.0001
-cfg.gkleak_scale = 1.0 
+cfg.gkleak_scale = 1.0
+
 
 # parameters from Optuna (trial_2316_data.json)
 """
@@ -209,7 +211,7 @@ cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeight}2"
 # Recording and plotting options
 ###########################################################
 
-cfg.recordStep = 10  # Step size in ms to save data (e.g. V traces, LFP, etc)
+cfg.recordStep = 1  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
 cfg.saveFolder = "dataSS3/"
 cfg.savePickle = False  # Save params, network and sim output to pickle file
