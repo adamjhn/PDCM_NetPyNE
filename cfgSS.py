@@ -33,12 +33,12 @@ cfg.hParams["celsius"] = 34
 cfg.hParams["v_init"] = -70
 cfg.Ncells = 10
 ### Options to save memory in large-scale ismulations
-cfg.gatherOnlySimData = False  # Original
+cfg.gatherOnlySimData = True  # Original
 
 # set the following 3 options to False when running large-scale versions of the model (>50% scale) to save memory
-cfg.saveCellSecs = True
-cfg.saveCellConns = True
-cfg.createPyStruct = True
+cfg.saveCellSecs = False
+cfg.saveCellConns = False
+cfg.createPyStruct = False
 
 # Network dimensions
 cfg.sizeX = 242.0  # 250.0 #1000
@@ -64,13 +64,13 @@ elif cfg.ox == "hypoxic":
 cfg.sa2v = 3.0  # False
 
 cfg.betaNrn = 0.24
-#cfg.Ncell = int(
+# cfg.Ncell = int(
 #    cfg.density * (cfg.sizeX * cfg.sizeY * cfg.sizeZ * 1e-9)
-#)  # default 90k / mm^3
-#if cfg.density == 90000.0:
+# )  # default 90k / mm^3
+# if cfg.density == 90000.0:
 cfg.Ncell = 12767
 cfg.rs = ((cfg.betaNrn * cfg.Vtissue) / (2 * np.pi * cfg.Ncell)) ** (1 / 3)
-#else:
+# else:
 #    cfg.rs = 7.52
 
 cfg.epas = -70  # False
@@ -94,8 +94,8 @@ cfg.r0 = 100.0
 # cfg.secmap = {'somatic':['soma'], 'apical':['Adend1','Adend2','Adend3'], 'axonal':['axon'], 'basal':['Bdend']}
 
 # Scale synapses weights
-cfg.excWeight = 2e-7
-cfg.inhWeight = 13.5*cfg.excWeight
+cfg.excWeight = 1e-3
+cfg.inhWeightScale = 13.5
 cfg.gnabar = 30 / 1000
 cfg.gkbar = 25 / 1000
 cfg.ukcc2 = 0.3
@@ -103,7 +103,6 @@ cfg.unkcc1 = 0.1
 cfg.pmax = 3
 cfg.gpas = 0.0001
 cfg.gkleak_scale = 1.0
-
 
 # parameters from Optuna (trial_2316_data.json)
 """
@@ -205,19 +204,19 @@ cfg.simLabel = "pd_mc_scale-%s_DC-%d_TH-%d_Balanced-%d_dur-%d_wscale_%.6g" % (
     cfg.scaleConnWeight,
 )
 """
-cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeight}2"
+cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeightScale}"
 
 ###########################################################
 # Recording and plotting options
 ###########################################################
 
-cfg.recordStep = 1  # Step size in ms to save data (e.g. V traces, LFP, etc)
+cfg.recordStep = 100  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
 cfg.saveFolder = "dataSS3/"
 cfg.savePickle = False  # Save params, network and sim output to pickle file
 cfg.saveJson = True
 cfg.saveDataInclude = ["simData", "simConfig"]
-cfg.recordStim = True
+cfg.recordStim = False
 cfg.printSynsAfterRule = False
 cfg.recordCells = [
     f"L{i}{ei}_{idx}" for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)

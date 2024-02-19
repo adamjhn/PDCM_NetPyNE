@@ -40,7 +40,7 @@ cfg.data = data
 
 # Population size N
 L = list(data.keys())
-#N_Full = np.array([len(data[pop]["cellGids"]) for pop in L])
+# N_Full = np.array([len(data[pop]["cellGids"]) for pop in L])
 N_Full = np.array([cfg.Ncells for pop in L])
 
 ############################################################
@@ -166,7 +166,9 @@ for pop, sz in zip(L, N_Full):
             netParams.connParams[f"{pop}_{idx}_{syn}"] = {
                 "preConds": {"pop": f"{pop}_{idx}_{syn}"},
                 "postConds": {"pop": f"{pop}_{idx}"},
-                "weight": cfg.excWeight if syn == "exc" else cfg.inhWeight,
+                "weight": cfg.excWeight
+                if syn == "exc"
+                else cfg.excWeight * cfg.inhWeightScale,
                 "delay": 2,
                 "synMech": syn,
             }
