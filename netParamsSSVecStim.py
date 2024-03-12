@@ -25,7 +25,7 @@ except:
 # examples of  input/output relation for LIF network model
 data = pickle.load(
     open(
-        "sample_pd_scale-1.0_DC-0_TH-1_Balanced-1_dur-1.pkl",
+        "sample_pd_scale-0.16_DC-0_TH-1_Balanced-1_dur-1.pkl",
         "rb",
     )
 )
@@ -409,8 +409,8 @@ p = "%s * p_max / (1.0 + rxd.rxdmath.exp((20.0 - (%s/vol_ratio[ecs]) * alpha)/3.
     o2ecs,
 )
 p = "p_max"  # assume abundant oxygen during parameter optimization
-pumpA = "(%s / (1.0 + rxd.rxdmath.exp((25.0 - nai[cyt] / vol_ratio[cyt])/3.0)))" % (p)
-pumpB = "(1.0 / (1.0 + rxd.rxdmath.exp(3.5 - kko[ecs] / vol_ratio[ecs])))"
+pumpA = f"({p} / (1.0 + rxd.rxdmath.exp(({cfg.KNai} - nai[cyt] / vol_ratio[cyt])/3.0)))"
+pumpB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kko[ecs] / vol_ratio[ecs])))"
 pump = "(%s) * (%s)" % (pumpA, pumpB)
 gliapump = (
     "(1.0/3.0) * (%s / (1.0 + rxd.rxdmath.exp((25.0 - gnai_initial) / 3.0))) * (1.0 / (1.0 + rxd.rxdmath.exp(3.5 - kko[ecs]/vol_ratio[ecs])))"
