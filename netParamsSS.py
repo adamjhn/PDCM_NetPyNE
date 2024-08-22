@@ -523,24 +523,18 @@ ek = "26.64 * rxd.rxdmath.log(kko[ecs]*vol_ratio[cyt]/(kki[cyt]*vol_ratio[ecs]))
 ecl = "26.64 * rxd.rxdmath.log(cli[cyt]*vol_ratio[ecs]/(clo[ecs]*vol_ratio[cyt]))"
 
 o2ecs = "o2_extracellular[ecs_o2]"
+rescale_o2 = 32 * 20
 o2switch = "(1.0 + rxd.rxdmath.tanh(1e4 * (%s - 5e-4))) / 2.0" % (o2ecs)
-p = "%s * p_max / (1.0 + rxd.rxdmath.exp((20.0 - (%s/vol_ratio[ecs]) * alpha)/3.0))" % (
-    o2switch,
-    o2ecs,
-)
-p = "p_max"  # assume abundant oxygen during parameter optimization
-pumpA = f"({p} / (1.0 + rxd.rxdmath.exp({cfg.KNai} - nai[cyt] / vol_ratio[cyt])/3.0)))"
-pumpB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kko[ecs] / vol_ratio[ecs])))"
-pump = "(%s) * (%s)" % (pumpA, pumpB)
-gliapump = (
-    "(1.0/3.0) * (%s / (1.0 + rxd.rxdmath.exp((25.0 - gnai_initial) / 3.0))) * (1.0 / (1.0 + rxd.rxdmath.exp(3.5 - kko[ecs]/vol_ratio[ecs])))"
-    % (p)
-)
-g_glia = (
-    "g_gliamax / (1.0 + rxd.rxdmath.exp(-((%s)*alpha/vol_ratio[ecs] - 2.5)/0.2))"
-    % (o2ecs)
-)
-glia12 = "(%s) / (1.0 + rxd.rxdmath.exp((18.0 - kko[ecs] / vol_ratio[ecs])/2.5))" % (
+p = f"{o2switch} / (1.0 + rxd.rxdmath.exp((20.0 - ({o2ecs}/vol_ratio[ecs]) * {rescale_o2})/3.0))"
+# pump relation to intracellular Na+ and extracellular K+
+pumpA = f"(1.0 / (1.0 + rxd.rxdmath.exp(({cfg.KNai} - na[cyt] / vol_ratio[cyt])/3.0)))"
+pumpB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kk[ecs] / vol_ratio[ecs])))"
+pump_max = f"p_max * {pumpA} * {pumpB}"  # pump rate with unlimited o2
+pump = f"{p} * {pump_max}"  # pump rate scaled by available o2
+
+gliapump = f"{cfg.GliaPumpScale} * p_max * {p} * {pumpAg} * {pumpBg}"
+g_glia = f"g_gliamax / (1.0 + rxd.rxdmath.exp(-(({o2ecs})*rescale_o2/vol_ratio[ecs] - 2.5)/0.2))"
+glia12 = "(%s) / (1.0 + rxd.rxdmath.exp((18.0 - kk[ecs] / vol_ratio[ecs])/2.5))" % (
     g_glia
 )
 

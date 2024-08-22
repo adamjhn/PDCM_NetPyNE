@@ -51,15 +51,13 @@ cfg.borderY = [-119.72972477280001, 189.30002448484998]
 cfg.borderZ = [0, 0]
 
 # slice conditions
+cfg.o2_bath = 0.06
+cfg.o2_init = 0.04
+cfg.alpha_ecs = 0.2
+cfg.alpha_ecs = 0.2
+cfg.tort_ecs = 1.6
+cfg.o2drive = 0.013
 cfg.ox = "perfused"
-if cfg.ox == "perfused":
-    cfg.o2_bath = 0.1
-    cfg.alpha_ecs = 0.2
-    cfg.tort_ecs = 1.6
-elif cfg.ox == "hypoxic":
-    cfg.o2_bath = 0.01
-    cfg.alpha_ecs = 0.07
-    cfg.tort_ecs = 1.8
 
 cfg.sa2v = 3.0  # False
 
@@ -94,8 +92,8 @@ cfg.r0 = 100.0
 # cfg.secmap = {'somatic':['soma'], 'apical':['Adend1','Adend2','Adend3'], 'axonal':['axon'], 'basal':['Bdend']}
 
 # Scale synapses weights
-cfg.excWeight = 5e-4
-cfg.inhWeightScale = 1
+cfg.excWeight = 5e-6
+cfg.inhWeightScale = 8
 cfg.gnabar = 30 / 1000
 cfg.gkbar = 25 / 1000
 cfg.ukcc2 = 0.3
@@ -105,6 +103,9 @@ cfg.gpas = 0.0001
 cfg.gkleak_scale = 1
 cfg.KKo = 5.3
 cfg.KNai = 27.9
+cfg.GliaKKo = 3.5  # 4.938189537703508  # originally 3.5 mM
+cfg.GliaPumpScale = 1 / 3  # 1 / 3  # originally 1/3
+cfg.scaleConnWeight = 1
 ###########################################################
 # Network Options
 ###########################################################

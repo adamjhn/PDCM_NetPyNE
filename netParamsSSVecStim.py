@@ -62,6 +62,12 @@ netParams.sizeY = 1470  # y-dimension (vertical height or cortical depth) size i
 netParams.sizeZ = 300  # z-dimension (horizontal depth) size in um
 netParams.shape = "cylinder"  # cylindrical (column-like) volume
 
+netParams.delayMin_e = 1.5
+netParams.ddelay = 0.5
+netParams.delayMin_i = 0.75
+netParams.weightMin = 2129.829648137354  # from scale = 0.16
+netParams.dweight = 0.1
+
 popDepths = [
     [0.08, 0.27],
     [0.08, 0.27],
@@ -151,9 +157,10 @@ for pop, sz in zip(L, N_Full):
         for syn in ["exc", "inh"]:
             if syn == "exc":
                 inputs, weights = filterTimes(inp[exc], wei[exc])
+                weightScale = cfg.excWeight
             else:
                 inputs, weights = filterTimes(inp[inh], wei[inh])
-
+                weightScale = cfg.excWeight * cfg.inhWeightScale
             # create a source from the pre-recorded spikes
             netParams.popParams[f"{pop}_{idx}_{syn}"] = {
                 "cellModel": "VecStim",
@@ -166,9 +173,7 @@ for pop, sz in zip(L, N_Full):
             netParams.connParams[f"{pop}_{idx}_{syn}"] = {
                 "preConds": {"pop": f"{pop}_{idx}_{syn}"},
                 "postConds": {"pop": f"{pop}_{idx}"},
-                "weight": cfg.excWeight
-                if syn == "exc"
-                else cfg.excWeight * cfg.inhWeightScale,
+                "weight": f"2*max(0, {weightScale} * (weightMin +normal(0,dweight*weightMin)))",  # synaptic weight
                 "delay": 2,
                 "synMech": syn,
             }
@@ -209,6 +214,7 @@ constants = {
     "clo_initial": 130.0,
     "cli_initial": 6.0,
     "o2_bath": cfg.o2_bath,
+    "o2_init": cfg.o2_init,
     "v_initial": -70.0,
 }
 
@@ -286,6 +292,7 @@ regions["ecs_o2"] = {
 evaldict = {
     "vol_ratio[ecs]": "1.0",
     "vol_ratio[cyt]": "1.0",
+    "o2_extracellular[ecs_o2]": constants["o2_init"],
     "rxd.rxdmath": "math",
     "kki[cyt]": constants["ki_initial"],
     "kko[ecs]": constants["ko_initial"],
@@ -348,7 +355,7 @@ species["cli"] = {
 params = {}
 params["o2_extracellular"] = {
     "regions": ["ecs_o2"],
-    "initial": 1e12,
+    "initial": constants["o2_init"],
 }  # constants['o2_bath']}
 params["kko"] = {
     "regions": ["ecs"],
@@ -403,26 +410,21 @@ ek = "26.64 * rxd.rxdmath.log(kko[ecs]*vol_ratio[cyt]/(kki[cyt]*vol_ratio[ecs]))
 ecl = "26.64 * rxd.rxdmath.log(cli[cyt]*vol_ratio[ecs]/(clo[ecs]*vol_ratio[cyt]))"
 
 o2ecs = "o2_extracellular[ecs_o2]"
+rescale_o2 = 32 * 20
 o2switch = "(1.0 + rxd.rxdmath.tanh(1e4 * (%s - 5e-4))) / 2.0" % (o2ecs)
-p = "%s * p_max / (1.0 + rxd.rxdmath.exp((20.0 - (%s/vol_ratio[ecs]) * alpha)/3.0))" % (
-    o2switch,
-    o2ecs,
-)
-p = "p_max"  # assume abundant oxygen during parameter optimization
-pumpA = f"({p} / (1.0 + rxd.rxdmath.exp(({cfg.KNai} - nai[cyt] / vol_ratio[cyt])/3.0)))"
-pumpB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kko[ecs] / vol_ratio[ecs])))"
-pump = "(%s) * (%s)" % (pumpA, pumpB)
-gliapump = (
-    "(1.0/3.0) * (%s / (1.0 + rxd.rxdmath.exp((25.0 - gnai_initial) / 3.0))) * (1.0 / (1.0 + rxd.rxdmath.exp(3.5 - kko[ecs]/vol_ratio[ecs])))"
-    % (p)
-)
-g_glia = (
-    "g_gliamax / (1.0 + rxd.rxdmath.exp(-((%s)*alpha/vol_ratio[ecs] - 2.5)/0.2))"
-    % (o2ecs)
-)
-glia12 = "(%s) / (1.0 + rxd.rxdmath.exp((18.0 - kko[ecs] / vol_ratio[ecs])/2.5))" % (
-    g_glia
-)
+p = f"{o2switch} / (1.0 + rxd.rxdmath.exp((20.0 - ({o2ecs}) * {rescale_o2})/3.0))"
+# pump relation to intracellular Na+ and extracellular K+
+pumpA = f"(1.0 / (1.0 + rxd.rxdmath.exp(({cfg.KNai} - nai[cyt])/3.0)))"
+pumpB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kko[ecs])))"
+pump_max = f"p_max * {pumpA} * {pumpB}"  # pump rate with unlimited o2
+pump = f"{p} * {pump_max}"  # pump rate scaled by available o2
+
+
+pumpAg = "(1.0 / (1.0 + rxd.rxdmath.exp((25 - gnai_initial)/3.0)))"
+pumpBg = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.GliaKKo} - kk[ecs])))"
+gliapump = f"{cfg.GliaPumpScale} * p_max * {p} * {pumpAg} * {pumpBg}"
+g_glia = f"g_gliamax / (1.0 + rxd.rxdmath.exp(-(({o2ecs})*rescale_o2- 2.5)/0.2))"
+glia12 = "(%s) / (1.0 + rxd.rxdmath.exp((18.0 - kko[ecs])/2.5))" % (g_glia)
 
 # epsilon_k = "(epsilon_k_max/(1.0 + rxd.rxdmath.exp(-(((%s)/vol_ratio[ecs]) * alpha - 2.5)/0.2))) * (1.0/(1.0 + rxd.rxdmath.exp((-20 + ((1.0+1.0/beta0 -vol_ratio[ecs])/vol_ratio[ecs]) /2.0))))" % (o2ecs)
 epsilon_kA = (
