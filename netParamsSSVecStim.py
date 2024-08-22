@@ -215,8 +215,9 @@ constants = {
     "cli_initial": 6.0,
     "o2_bath": cfg.o2_bath,
     "o2_init": cfg.o2_init,
-    "v_initial": -70.0,
+    "v_initial": cfg.hParams["v_init"],
 }
+
 
 # sodium activation 'm'
 alpha_m = "(0.32 * (rxd.v + 54.0))/(1.0 - rxd.rxdmath.exp(-(rxd.v + 54.0)/4.0))"
@@ -244,6 +245,116 @@ alpha_n0 = (0.032 * (constants["v_initial"] + 52.0)) / (
 )
 beta_n0 = 0.5 * math.exp(-(constants["v_initial"] + 57.0) / 40.0)
 n_initial = alpha_n0 / (beta_n0 + 1.0)
+
+
+### reactions
+gna = "gnabar*mgate**3*hgate"
+gk = "gkbar*ngate**4"
+fko = "1.0 / (1.0 + rxd.rxdmath.exp(16.0 - kk[ecs] / vol_ratio[ecs]))"
+nkcc1A = "rxd.rxdmath.log((kk[cyt] * cl[cyt] / vol_ratio[cyt]**2) / (kk[ecs] * cl[ecs] / vol_ratio[ecs]**2))"
+nkcc1B = "rxd.rxdmath.log((na[cyt] * cl[cyt] / vol_ratio[cyt]**2) / (na[ecs] * cl[ecs] / vol_ratio[ecs]**2))"
+nkcc1 = f"(unkcc1 * ({fko}) * ({nkcc1A} + {nkcc1B}))"
+kcc2 = "(ukcc2 * rxd.rxdmath.log((kk[cyt] * cl[cyt] * vol_ratio[cyt]**2) / (kk[ecs] * cl[ecs] * vol_ratio[ecs]**2)))"
+
+# Nerst equation - reversal potentials
+ena = "26.64 * rxd.rxdmath.log(na[ecs]*vol_ratio[cyt]/(na[cyt]*vol_ratio[ecs]))"
+ek = "26.64 * rxd.rxdmath.log(kk[ecs]*vol_ratio[cyt]/(kk[cyt]*vol_ratio[ecs]))"
+ecl = "26.64 * rxd.rxdmath.log(cl[cyt]*vol_ratio[ecs]/(cl[ecs]*vol_ratio[cyt]))"
+
+o2ecs = "o2_extracellular[ecs_o2]"
+# Wei model has o2 baseline 32mg/L, i.e. varies between 0 and 6.0mM
+# Our model has o2 baseline of 0.06mM bath or 0.04mM initial
+# to provide a similar sigmoid curve for the range of oxygen considered
+# currents were scaled by 32/0.05 = 640 mg/L/mM
+rescale_o2 = 32 * 20
+o2switch = "(1.0 + rxd.rxdmath.tanh(1e4 * (%s - 5e-4))) / 2.0" % (o2ecs)
+p = f"{o2switch} / (1.0 + rxd.rxdmath.exp((20.0 - ({o2ecs}/vol_ratio[ecs]) * {rescale_o2})/3.0))"
+# pump relation to intracellular Na+ and extracellular K+
+pumpA = f"(1.0 / (1.0 + rxd.rxdmath.exp(({cfg.KNai} - na[cyt] / vol_ratio[cyt])/3.0)))"
+pumpB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kk[ecs] / vol_ratio[ecs])))"
+pump_max = f"p_max * {pumpA} * {pumpB}"  # pump rate with unlimited o2
+pump = f"{p} * {pump_max}"  # pump rate scaled by available o2
+
+pumpAg = "(1.0 / (1.0 + rxd.rxdmath.exp((25 - gnai_initial)/3.0)))"
+pumpBg = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.GliaKKo} - kk[ecs] / vol_ratio[ecs])))"
+gliapump = f"{cfg.GliaPumpScale} * p_max * {p} * {pumpAg} * {pumpBg}"
+g_glia = (
+    f"g_gliamax / (1.0 + rxd.rxdmath.exp(-(({o2ecs})*32/vol_ratio[ecs] - 2.5)/0.2))"
+)
+glia12 = "(%s) / (1.0 + rxd.rxdmath.exp((18.0 - kk[ecs] / vol_ratio[ecs])/2.5))" % (
+    g_glia
+)
+
+if cfg.prep == "invitro":
+    # represents diffusion between the ECS and the bath
+    epsilon_kA = (
+        "(epsilon_k_max/(1.0 + rxd.rxdmath.exp(-((%s/vol_ratio[ecs]) * alpha - 2.5)/0.2)))"
+        % (o2ecs)
+    )
+    epsilon_kB = "(1.0/(1.0 + rxd.rxdmath.exp((-20 + ((1.0+1.0/beta0 - vol_ratio[ecs])/vol_ratio[ecs]) /2.0))))"
+    epsilon_k = "%s * %s" % (epsilon_kA, epsilon_kB)
+
+
+# volume_scale = "1e-18 * avo * %f" % (1.0 / cfg.sa2v)
+
+avo = 6.0221409 * (10**23)
+volume_scale = 1e-18 * avo / cfg.sa2v
+osm = "(1.1029 - 0.1029*rxd.rxdmath.exp( ( (na[ecs] + kk[ecs] + cl[ecs] + 18.0)/vol_ratio[ecs] - (na[cyt] + kk[cyt] + cl[cyt] + 132.0)/vol_ratio[cyt])/20.0))"
+scalei = str(avo * 1e-18)
+scaleo = str(avo * 1e-18)
+
+
+# update constants to ensure net zero flux at RMP
+evalInit = {
+    "vol_ratio[ecs]": "1.0",
+    "vol_ratio[cyt]": "1.0",
+    "rxd.rxdmath": "math",
+    "rxd.v": constants["v_initial"],
+    "kk[cyt]": constants["ki_initial"],
+    "kk[ecs]": constants["ko_initial"],
+    "na[cyt]": constants["nai_initial"],
+    "na[ecs]": constants["nao_initial"],
+    "cl[cyt]": constants["cli_initial"],
+    "cl[ecs]": constants["clo_initial"],
+    "o2_extracellular[ecs_o2]": constants["o2_init"],
+    "ngate": n_initial,
+    "mgate": m_initial,
+    "hgate": h_initial,
+}
+
+
+def initEval(ratestr):
+    for k, v in evalInit.items():
+        ratestr = ratestr.replace(k, str(v))
+    for k, v in constants.items():
+        ratestr = ratestr.replace(k, str(v))
+    return eval(ratestr)
+
+
+min_pmax = f"p_max * ({nkcc1} + {kcc2} + {gk} * (v_initial - {ek})/({volume_scale}))/(2*{pump_max})"
+pmin = initEval(min_pmax)
+if constants["p_max"] < pmin:
+    print("Pump current is too low to balance K+ currents")
+    print(f"p_max set to {pmin}")
+    constants["p_max"] = pmin
+
+# rescale pmax
+"""
+pA = "(1.0 / (1.0 + rxd.rxdmath.exp((25.0 - na[cyt] / vol_ratio[cyt])/3.0)))"
+pB = "(1.0 / (1.0 + rxd.rxdmath.exp(3.5 - kk[ecs] / vol_ratio[ecs])))"
+rA = f"(1.0 / (1.0 + rxd.rxdmath.exp(({cfg.KNai} - na[cyt] / vol_ratio[cyt])/3.0)))"
+rB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kk[ecs] / vol_ratio[ecs])))"
+rescale = initEval(f"{pA} * {pB}/({rA} * {rB})")
+constants["p_max"] = constants["p_max"] * rescale
+"""
+clbalance = f"(-(2*{nkcc1} + {kcc2}) * {volume_scale})/({ecl} - v_initial)"
+kbalance = f"({gk} * (v_initial - {ek}) + {volume_scale} * ({nkcc1} + {kcc2}  -2.0 * {pump}))  / ({ek} - v_initial)"
+nabalance = f"({gna} * (v_initial - {ena}) + ({nkcc1} + 3.0 * {pump}) * {volume_scale}) / ({ena} - v_initial)"
+
+constants["gclbar_l"] = initEval(clbalance)
+constants["gkbar_l"] = cfg.gkleak_scale * initEval(kbalance)
+constants["gnabar_l"] = initEval(nabalance)
+
 
 netParams.rxdParams["constants"] = constants
 
@@ -287,24 +398,6 @@ regions["ecs_o2"] = {
 #                 'args': {'volume_fraction': cfg.cyt_fraction, 'surface_fraction': 1}}}
 
 # xregions['mem'] = {'cells' : 'all', 'secs' : 'all', 'nrn_region' : None, 'geometry' : 'membrane'}
-
-
-evaldict = {
-    "vol_ratio[ecs]": "1.0",
-    "vol_ratio[cyt]": "1.0",
-    "o2_extracellular[ecs_o2]": constants["o2_init"],
-    "rxd.rxdmath": "math",
-    "kki[cyt]": constants["ki_initial"],
-    "kko[ecs]": constants["ko_initial"],
-    "nai[cyt]": constants["nai_initial"],
-    "nao[ecs]": constants["nao_initial"],
-    "cli[cyt]": constants["cli_initial"],
-    "clo[ecs]": constants["clo_initial"],
-    "ngate": n_initial,
-    "mgate": m_initial,
-    "hgate": h_initial,
-}
-
 
 regions["cyt"] = {
     "cells": "all",
@@ -396,53 +489,6 @@ netParams.rxdParams["states"] = {
 }
 
 ### reactions
-gna = "gnabar*mgate**3*hgate"
-gk = "gkbar*ngate**4"
-fko = "1.0 / (1.0 + rxd.rxdmath.exp(16.0 - kko[ecs] / vol_ratio[ecs]))"
-nkcc1A = "rxd.rxdmath.log((kki[cyt] * cli[cyt] / vol_ratio[cyt]**2) / (kko[ecs] * clo[ecs] / vol_ratio[ecs]**2))"
-nkcc1B = "rxd.rxdmath.log((nai[cyt] * cli[cyt] / vol_ratio[cyt]**2) / (nao[ecs] * clo[ecs] / vol_ratio[ecs]**2))"
-nkcc1 = "unkcc1 * (%s) * (%s+%s)" % (fko, nkcc1A, nkcc1B)
-kcc2 = "ukcc2 * rxd.rxdmath.log((kki[cyt] * cli[cyt] * vol_ratio[cyt]**2) / (kko[ecs] * clo[ecs] * vol_ratio[ecs]**2))"
-
-# Nerst equation - reversal potentials
-ena = "26.64 * rxd.rxdmath.log(nao[ecs]*vol_ratio[cyt]/(nai[cyt]*vol_ratio[ecs]))"
-ek = "26.64 * rxd.rxdmath.log(kko[ecs]*vol_ratio[cyt]/(kki[cyt]*vol_ratio[ecs]))"
-ecl = "26.64 * rxd.rxdmath.log(cli[cyt]*vol_ratio[ecs]/(clo[ecs]*vol_ratio[cyt]))"
-
-o2ecs = "o2_extracellular[ecs_o2]"
-rescale_o2 = 32 * 20
-o2switch = "(1.0 + rxd.rxdmath.tanh(1e4 * (%s - 5e-4))) / 2.0" % (o2ecs)
-p = f"{o2switch} / (1.0 + rxd.rxdmath.exp((20.0 - ({o2ecs}) * {rescale_o2})/3.0))"
-# pump relation to intracellular Na+ and extracellular K+
-pumpA = f"(1.0 / (1.0 + rxd.rxdmath.exp(({cfg.KNai} - nai[cyt])/3.0)))"
-pumpB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kko[ecs])))"
-pump_max = f"p_max * {pumpA} * {pumpB}"  # pump rate with unlimited o2
-pump = f"{p} * {pump_max}"  # pump rate scaled by available o2
-
-
-pumpAg = "(1.0 / (1.0 + rxd.rxdmath.exp((25 - gnai_initial)/3.0)))"
-pumpBg = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.GliaKKo} - kk[ecs])))"
-gliapump = f"{cfg.GliaPumpScale} * p_max * {p} * {pumpAg} * {pumpBg}"
-g_glia = f"g_gliamax / (1.0 + rxd.rxdmath.exp(-(({o2ecs})*rescale_o2- 2.5)/0.2))"
-glia12 = "(%s) / (1.0 + rxd.rxdmath.exp((18.0 - kko[ecs])/2.5))" % (g_glia)
-
-# epsilon_k = "(epsilon_k_max/(1.0 + rxd.rxdmath.exp(-(((%s)/vol_ratio[ecs]) * alpha - 2.5)/0.2))) * (1.0/(1.0 + rxd.rxdmath.exp((-20 + ((1.0+1.0/beta0 -vol_ratio[ecs])/vol_ratio[ecs]) /2.0))))" % (o2ecs)
-epsilon_kA = (
-    "(epsilon_k_max/(1.0 + rxd.rxdmath.exp(-((%s/vol_ratio[ecs]) * alpha - 2.5)/0.2)))"
-    % (o2ecs)
-)
-epsilon_kB = "(1.0/(1.0 + rxd.rxdmath.exp((-20 + ((1.0+1.0/beta0 - vol_ratio[ecs])/vol_ratio[ecs]) /2.0))))"
-epsilon_k = "%s * %s" % (epsilon_kA, epsilon_kB)
-
-
-volume_scale = "1e-18 * avo * %f" % (1.0 / cfg.sa2v)
-
-avo = 6.0221409 * (10**23)
-osm = "(1.1029 - 0.1029*rxd.rxdmath.exp( ( (nao[ecs] + kko[ecs] + clo[ecs] + 18.0)/vol_ratio[ecs] - (nai[cyt] + kki[cyt] + cli[cyt] + 132.0)/vol_ratio[cyt])/20.0))"
-scalei = str(avo * 1e-18)
-scaleo = str(avo * 1e-18)
-
-### reactions
 mcReactions = {}
 
 ## volume dynamics
@@ -505,31 +551,6 @@ mcReactions["nkcc1_current3"] = {
     "custom_dynamics": True,
     "membrane_flux": True,
 }
-
-
-def initEval(ratestr):
-    for k, v in evaldict.items():
-        ratestr = ratestr.replace(k, str(v))
-    for k, v in constants.items():
-        ratestr = ratestr.replace(k, str(v))
-    return eval(ratestr)
-
-
-min_pmax = f"p_max * ({nkcc1} + {kcc2} + {gk} * (v_initial - {ek})/({volume_scale}))/(2*{pump})"
-pmin = initEval(min_pmax)
-if constants["p_max"] < pmin:
-    print("Pump current is too low to balance K+ currents")
-    print(f"p_max set to {pmin}")
-    constants["p_max"] = pmin
-
-clbalance = f"-((2.0 * {nkcc1} +  {kcc2}) * {volume_scale})/({ecl} - v_initial)"
-kbalance = f"-(({nkcc1} + {kcc2} - 2 * {pump}) * {volume_scale} + ({gk} * (v_initial - {ek})))/(v_initial-{ek})"
-nabalance = f"-(({nkcc1} + 3 * {pump}) * {volume_scale} + ({gna} * (v_initial - {ena})))/(v_initial-{ena})"
-
-constants["gclbar_l"] = initEval(clbalance)
-constants["gkbar_l"] = cfg.gkleak_scale * initEval(kbalance)
-constants["gnabar_l"] = initEval(nabalance)
-
 
 # ## kcc2 (K+/Cl- cotransporter)
 mcReactions["kcc2_current1"] = {

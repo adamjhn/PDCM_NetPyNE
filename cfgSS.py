@@ -71,7 +71,7 @@ cfg.rs = ((cfg.betaNrn * cfg.Vtissue) / (2 * np.pi * cfg.Ncell)) ** (1 / 3)
 # else:
 #    cfg.rs = 7.52
 
-cfg.epas = -70  # False
+cfg.epas = -70.00767248243432
 cfg.Cm = 1.0
 cfg.Ra = 100
 cfg.sa2v = 3.0  # False
