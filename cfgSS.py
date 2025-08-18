@@ -23,56 +23,57 @@ cfg = specs.SimConfig()  # object of class SimConfig to store simulation configu
 ############################################################
 
 cfg.seeds["stim"] = 3
-cfg.duration = 2 * 1e2  # Duration of the simulation, in ms
+cfg.duration = 1e3  # Duration of the simulation, in ms
 cfg.dt = 0.025  # Internal integration timestep to use
 cfg.verbose = 0  # Show detailed messages
 cfg.seeds["m"] = 123
-cfg.printPopAvgRates = True
+cfg.printPopAvgRates = False
 cfg.printRunTime = 1
 cfg.hParams["celsius"] = 34
-
+cfg.hParams["v_init"] = -70
+cfg.Ncells = 10
 ### Options to save memory in large-scale ismulations
-cfg.gatherOnlySimData = False  # Original
+cfg.gatherOnlySimData = True  # Original
 
 # set the following 3 options to False when running large-scale versions of the model (>50% scale) to save memory
-cfg.saveCellSecs = True
-cfg.saveCellConns = True
-cfg.createPyStruct = True
+cfg.saveCellSecs = False
+cfg.saveCellConns = False
+cfg.createPyStruct = False
 
 # Network dimensions
 cfg.sizeX = 242.0  # 250.0 #1000
 cfg.sizeY = 1470.0  # 250.0 #1000
 cfg.sizeZ = 242.0  # 200.0
 cfg.density = 90000.0
-cfg.Vtissue = cfg.sizeX * cfg.sizeY * cfg.sizeZ
+cfg.Vtissue = 1044329699.0
 cfg.borderX = [0, 72.960082572]
 cfg.borderY = [-119.72972477280001, 189.30002448484998]
 cfg.borderZ = [0, 0]
 
 # slice conditions
+cfg.o2_bath = 0.06
+cfg.o2_init = 0.04
+cfg.alpha_ecs = 0.2
+cfg.alpha_ecs = 0.2
+cfg.tort_ecs = 1.6
+cfg.o2drive = 0.013
 cfg.ox = "perfused"
-if cfg.ox == "perfused":
-    cfg.o2_bath = 0.1
-    cfg.alpha_ecs = 0.2
-    cfg.tort_ecs = 1.6
-elif cfg.ox == "hypoxic":
-    cfg.o2_bath = 0.01
-    cfg.alpha_ecs = 0.07
-    cfg.tort_ecs = 1.8
 
 cfg.sa2v = 3.0  # False
 
 cfg.betaNrn = 0.24
-cfg.Ncell = int(
-    cfg.density * (cfg.sizeX * cfg.sizeY * cfg.sizeZ * 1e-9)
-)  # default 90k / mm^3
-if cfg.density == 90000.0:
-    cfg.rs = ((cfg.betaNrn * cfg.Vtissue) / (2 * np.pi * cfg.Ncell)) ** (1 / 3)
-else:
-    cfg.rs = 7.52
+# cfg.Ncell = int(
+#    cfg.density * (cfg.sizeX * cfg.sizeY * cfg.sizeZ * 1e-9)
+# )  # default 90k / mm^3
+# if cfg.density == 90000.0:
+cfg.Ncell = 12767
+cfg.rs = ((cfg.betaNrn * cfg.Vtissue) / (2 * np.pi * cfg.Ncell)) ** (1 / 3)
+# else:
+#    cfg.rs = 7.52
 
-cfg.epas = -70  # False
-cfg.gpas = 0.0001
+cfg.epas = -70.00767248243432
+cfg.Cm = 1.0
+cfg.Ra = 100
 cfg.sa2v = 3.0  # False
 if cfg.sa2v:
     cfg.somaR = (cfg.sa2v * cfg.rs**3 / 2.0) ** (1 / 2)
@@ -87,14 +88,24 @@ cfg.r0 = 100.0
 
 
 # BPO config
-cfg.update_params = True
-cfg.secmap = {
-    "somatic": ["soma"],
-    "apical": ["Adend1", "Adend2", "Adend3"],
-    "axonal": ["axon"],
-    "basal": ["Bdend"],
-}
+# cfg.update_params = True
+# cfg.secmap = {'somatic':['soma'], 'apical':['Adend1','Adend2','Adend3'], 'axonal':['axon'], 'basal':['Bdend']}
 
+# Scale synapses weights
+cfg.excWeight = 5e-6
+cfg.inhWeightScale = 8
+cfg.gnabar = 30 / 1000
+cfg.gkbar = 25 / 1000
+cfg.ukcc2 = 0.3
+cfg.unkcc1 = 0.1
+cfg.pmax = 3
+cfg.gpas = 0.0001
+cfg.gkleak_scale = 1
+cfg.KKo = 5.3
+cfg.KNai = 27.9
+cfg.GliaKKo = 3.5  # 4.938189537703508  # originally 3.5 mM
+cfg.GliaPumpScale = 1 / 3  # 1 / 3  # originally 1/3
+cfg.scaleConnWeight = 1
 ###########################################################
 # Network Options
 ###########################################################
@@ -106,17 +117,18 @@ cfg.secmap = {
 # DC=False ; TH=True;  Balanced=True   => Figure 10A. But I want a partial reproduce so I guess Figure 10C is not necessary
 
 # Size of Network. Adjust this constants, please!
-cfg.ScaleFactor = 0.01  # 1.0 = 80.000
+cfg.ScaleFactor = 0.16  # 1.0 = 80.000
 
 # External input DC or Poisson
 cfg.DC = False  # True = DC // False = Poisson
 
 # Thalamic input in 4th and 6th layer on or off
-cfg.TH = False  # True = on // False = off
+cfg.TH = True  # True = on // False = off
 
 # Balanced and Unbalanced external input as PD article
 cfg.Balanced = True  # True=Balanced // False=Unbalanced
 
+"""
 # Scaling factor for weights when replacing point neurons with multicompartment neurons
 cfg.scaleConnWeight = 0.000001
 
@@ -128,30 +140,36 @@ cfg.simLabel = "pd_mc_scale-%s_DC-%d_TH-%d_Balanced-%d_dur-%d_wscale_%.6g" % (
     int(cfg.duration / 1e3),
     cfg.scaleConnWeight,
 )
+"""
+cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeightScale}"
 
 ###########################################################
 # Recording and plotting options
 ###########################################################
 
-cfg.recordStep = 0.1  # Step size in ms to save data (e.g. V traces, LFP, etc)
+cfg.recordStep = 100  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
-cfg.saveFolder = "data/"
-cfg.savePickle = True  # Save params, network and sim output to pickle file
-cfg.saveJson = False
+cfg.saveFolder = "dataSS3/"
+cfg.savePickle = False  # Save params, network and sim output to pickle file
+cfg.saveJson = True
+cfg.saveDataInclude = ["simData", "simConfig"]
 cfg.recordStim = False
 cfg.printSynsAfterRule = False
+cfg.recordCells = [
+    f"L{i}{ei}_{idx}" for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
+]
+cfg.recordTraces = {
+    f"{var}_soma": {"sec": "soma", "loc": 0.5, "var": var}
+    for var in ["v", "nai", "ki", "cli", "dumpi"]
+}  # Dict with traces to record
+# cfg.analysis['plotRaster'] = {'saveFig': True}                  # Plot a raster
+# cfg.analysis['plotTraces'] = {'saveFig': True}  # Plot recorded traces for this list of cells
 cfg.recordCellsSpikes = [
-    "L2e",
-    "L2i",
-    "L4e",
-    "L4i",
-    "L5e",
-    "L5i",
-    "L6e",
-    "L6i",
+    f"{pop}_{idx}"
+    for pop in ["L2e", "L2i", "L4e", "L4i", "L5e", "L5i", "L6e", "L6i"]
+    for idx in range(10)
 ]  # record only spikes of cells (not ext stims)
 
-cfg.recordLFP = [[150, y, 150] for y in range(0, 1500, 100)]
 
 # # raster plot
 # cfg.analysis['plotRaster'] = {'include': cfg.recordCellsSpikes, 'timeRange': [100,600], 'popRates' : False, 'figSize' : (6,12),
@@ -175,19 +193,6 @@ layer_bounds = {
     "L4": 0.58 * 1470,
     "L5": 0.73 * 1470,
     "L6": 1.0 * 1470,
-}
-
-cfg.analysis["plotCSD"] = {
-    "spacing_um": 100,
-    "overlay": "CSD_bandpassed",
-    "timeRange": [100, 200],
-    "saveFig": True,
-    "figSize": (3, 12),
-    "fontSize": 16,
-    "dpi": 300,
-    "layer_lines": 1,
-    "layer_bounds": layer_bounds,
-    "showFig": 0,
 }
 
 
