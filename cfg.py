@@ -21,7 +21,7 @@ cfg = specs.SimConfig() # object of class SimConfig to store simulation configur
 ############################################################
 
 cfg.seeds['stim']=3
-cfg.duration = 1*1e3 #6*1e2   # Duration of the simulation, in ms
+cfg.duration = 60e3 #6*1e2   # Duration of the simulation, in ms
 cfg.dt = 0.025          # Internal integration timestep to use
 cfg.verbose = 0     # Show detailed messages
 cfg.seeds['m'] = 123
@@ -29,12 +29,12 @@ cfg.printPopAvgRates = True
 cfg.printRunTime = 1
 
 ### Options to save memory in large-scale ismulations
-cfg.gatherOnlySimData = False  #Original
+cfg.gatherOnlySimData = True  #Original
 
 # set the following 3 options to False when running large-scale versions of the model (>50% scale) to save memory
-cfg.saveCellSecs = True 
+cfg.saveCellSecs = True
 cfg.saveCellConns = True
-cfg.createPyStruct = True     
+cfg.createPyStruct = True  
 
 
 ###########################################################
@@ -48,16 +48,16 @@ cfg.createPyStruct = True
 # DC=False ; TH=True;  Balanced=True   => Figure 10A. But I want a partial reproduce so I guess Figure 10C is not necessary
 
 # Size of Network. Adjust this constants, please!
-cfg.ScaleFactor = 0.10  # 1.0 = 80.000 
+cfg.ScaleFactor = 0.16  # 1.0 = 80.000 
 
 # External input DC or Poisson
 cfg.DC = False #True = DC // False = Poisson
 
 # Thalamic input in 4th and 6th layer on or off
-cfg.TH = False #True = on // False = off
+cfg.TH = True #True = on // False = off
 
 # Balanced and Unbalanced external input as PD article
-cfg.Balanced = False #True=Balanced // False=Unbalanced
+cfg.Balanced = True #True=Balanced // False=Unbalanced
 
 cfg.simLabel = 'pd_scale-%s_DC-%d_TH-%d_Balanced-%d_dur-%d'%(str(cfg.ScaleFactor), int(cfg.DC), int(cfg.TH), int(cfg.Balanced), int(cfg.duration/1e3))
 
@@ -67,8 +67,8 @@ cfg.simLabel = 'pd_scale-%s_DC-%d_TH-%d_Balanced-%d_dur-%d'%(str(cfg.ScaleFactor
 
 cfg.recordStep = 0.1         # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
-cfg.saveFolder = 'data/'
-cfg.savePickle = True         # Save params, network and sim output to pickle file
+cfg.saveFolder = '/tera/adam/PDSim'
+cfg.savePickle = True        # Save params, network and sim output to pickle file
 cfg.saveJson = False
 cfg.recordStim = False
 cfg.printSynsAfterRule = False

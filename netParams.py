@@ -24,18 +24,18 @@ def Reescale(ScaleFactor, C, N_Full, w_p, f_ext, tau_syn, Inp, InpDC):
 		# Note for the Balanced=False option, it should be possible to calculate a better approximation.
 		F_out=np.array([0.860, 2.600, 4.306, 5.396, 8.142, 8.188, 0.941, 7.3]) 
 		
-		Ncon=np.vstack(np.column_stack(0 for i in range(0,8)) for i in range(0,8))
+		Ncon=np.vstack([np.column_stack([0 for i in range(0,8)]) for i in range(0,8)])
 		for r in range(0,8): 
 			for c in range(0,8): 
 				Ncon[r][c]=(np.log(1.-C[r][c])/np.log(1. -1./(N_Full[r]*N_Full[c])) ) /N_Full[r]
 
-		w=w_p*np.column_stack(np.vstack( [1.0, -4.0] for i in range(0,8)) for i in range(0,4))
+		w=w_p*np.column_stack([np.vstack( [[1.0, -4.0] for i in range(0,8)]) for i in range(0,4)])
 		w[0][2]=2.0*w[0][2]
 
 		x1_all = w * Ncon * F_out
 		x1_sum = np.sum(x1_all, axis=1)
 		x1_ext = w_p * Inp * f_ext
-		I_ext=np.column_stack(0 for i in range(0,8))
+		I_ext=np.column_stack([0 for i in range(0,8)])
 		I_ext = 0.001 * tau_syn * (
 		        (1. - np.sqrt(ScaleFactor)) * x1_sum + 
 		        (1. - np.sqrt(ScaleFactor)) * x1_ext)
@@ -70,7 +70,7 @@ Vreset = -65 (mV) : -49 (mV) :
 #Fixed firing threshold
 Vteta  = -50 (mV)'''
 # Membrane capacity
-C_m=250 #pF
+C_m=3395.8518007146035 #pF
 # Mean amplitude of the postsynaptic potential (in mV).
 w_v=0.15
 # Mean amplitude of the postsynaptic potential (in pA).
