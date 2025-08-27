@@ -25,30 +25,79 @@ cfg = specs.SimConfig()  # object of class SimConfig to store simulation configu
 cfg.seeds["stim"] = 3
 cfg.duration = 1e3  # Duration of the simulation, in ms
 cfg.dt = 0.025  # Internal integration timestep to use
-cfg.verbose = 0  # Show detailed messages
+cfg.verbose = False  # Show detailed messages
 cfg.seeds["m"] = 123
 cfg.printPopAvgRates = False
-cfg.printRunTime = 1
 cfg.hParams["celsius"] = 34
 cfg.hParams["v_init"] = -70
-cfg.Ncells = 10
+# scaling factors
+cfg.poissonRateFactor = 1.0
+cfg.connected = True
 ### Options to save memory in large-scale ismulations
 cfg.gatherOnlySimData = True  # Original
+cfg.random123 = True
+
+
+# Size of Network. Adjust this constants, please!
+cfg.ScaleFactor = 0.16  # 1.0 = 80.000
+cfg.scaleConnWeightNetStims = 1 
+cfg.scaleConnWeightNetStimStd = 1
 
 # set the following 3 options to False when running large-scale versions of the model (>50% scale) to save memory
 cfg.saveCellSecs = False
-cfg.saveCellConns = False
+cfg.saveCellConns = True
 cfg.createPyStruct = False
+cfg.printPopAvgRates = True
+cfg.singleCells = False  # create one cell in each population
+cfg.printRunTime = 1
+cfg.Kceil = 15.0
+cfg.nRec = 25
+cfg.cellPops = [
+    "L2e",
+    "L2i",
+    "L4e",
+    "L4i",
+    "L5e",
+    "L5i",
+    "L6e",
+    "L6i",
+]  # record only spikes of cells (not ext stims)
+cfg.cellPopsInit = (-85, -60)
+cfg.recordCellsSpikes = [
+    f"L{i}{ei}_{idx}" for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
+] + ['L2e_0_exc', 'L2e_0_inh']
 
+if cfg.recordStim:
+    cfg.recordCellsSpikes += [
+        f"poissL{i}{ei}" for i in [2, 4, 5, 6] for ei in ["e", "i"]
+    ]
+    cfg.recordCellsSpikes += [f"bkg_THL{i}{ei}" for i in [4, 6] for ei in ["e", "i"]]
+
+#cfg.recordCells = [
+#    (f"L{i}{ei}", idx) for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
+#]
+
+cfg.recordCells = [
+    f"L{i}{ei}_{idx}" for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
+]
+cfg.recordTraces = {
+    f"{var}_soma": {"sec": "soma", "loc": 0.5, "var": var}
+    for var in ["v", "nai", "ki", "cli", "o2_consumedo"]
+}
+cfg.seed = 0
+cfg.seeds = {
+    "conn": 2 + cfg.seed,
+    "stim": 3 + cfg.seed,
+    "loc": 4 + cfg.seed,
+    "cell": 5 + cfg.seed,
+    "rec": 1 + cfg.seed,
+}
 # Network dimensions
-cfg.sizeX = 242.0  # 250.0 #1000
-cfg.sizeY = 1470.0  # 250.0 #1000
-cfg.sizeZ = 242.0  # 200.0
-cfg.density = 90000.0
-cfg.Vtissue = 1044329699.0
-cfg.borderX = [0, 72.960082572]
-cfg.borderY = [-119.72972477280001, 189.30002448484998]
-cfg.borderZ = [0, 0]
+cfg.sizeX = 700  # 250.0 #1000
+cfg.sizeY = 2131.2851 #1470.0  # 250.0 #1000
+cfg.sizeZ = 700  # 200.0
+cfg.dx = 700
+cfg.Vtissue = cfg.sizeX * cfg.sizeY * cfg.sizeZ
 
 # slice conditions
 cfg.o2_bath = 0.06
@@ -59,41 +108,32 @@ cfg.tort_ecs = 1.6
 cfg.o2drive = 0.013
 cfg.ox = "perfused"
 
-cfg.sa2v = 3.0  # False
+cfg.sa2v = 3.4  # False
 
-cfg.betaNrn = 0.24
-# cfg.Ncell = int(
-#    cfg.density * (cfg.sizeX * cfg.sizeY * cfg.sizeZ * 1e-9)
-# )  # default 90k / mm^3
-# if cfg.density == 90000.0:
-cfg.Ncell = 12767
+cfg.betaNrn = 0.29
+cfg.N_Full = [20683, 5834, 21915, 5479, 4850, 1065, 14395, 2948, 902]
+cfg.Ncell = sum([max(1, int(i * cfg.ScaleFactor)) for i in cfg.N_Full])
 cfg.rs = ((cfg.betaNrn * cfg.Vtissue) / (2 * np.pi * cfg.Ncell)) ** (1 / 3)
-# else:
-#    cfg.rs = 7.52
 
-cfg.epas = -70.00767248243432
+cfg.epas = -70.00000000000013
 cfg.Cm = 1.0
 cfg.Ra = 100
-cfg.sa2v = 3.0  # False
 if cfg.sa2v:
-    cfg.somaR = (cfg.sa2v * cfg.rs**3 / 2.0) ** (1 / 2)
+    cfg.somaR = (cfg.sa2v * cfg.rs ** 3 / 2.0) ** (1 / 2)
 else:
     cfg.somaR = cfg.rs
-cfg.cyt_fraction = cfg.rs**3 / cfg.somaR**3
-cfg.cyt_fraction = cfg.rs**3 / cfg.somaR**3
+cfg.cyt_fraction = cfg.rs ** 3 / cfg.somaR ** 3
 
 # sd init params
 cfg.k0 = 3.5
 cfg.r0 = 100.0
 
 
-# BPO config
-# cfg.update_params = True
-# cfg.secmap = {'somatic':['soma'], 'apical':['Adend1','Adend2','Adend3'], 'axonal':['axon'], 'basal':['Bdend']}
-
 # Scale synapses weights
-cfg.excWeight = 5e-6
-cfg.inhWeightScale = 8
+cfg.excWeight = 1e-3 
+cfg.inhWeightScale = 3
+cfg.weightMin = 0.1
+cfg.dWeight = 0.1 
 cfg.gnabar = 30 / 1000
 cfg.gkbar = 25 / 1000
 cfg.ukcc2 = 0.3
@@ -116,8 +156,6 @@ cfg.scaleConnWeight = 1
 # DC=False ; TH=False; Balanced=True   and run to 60 s to => Table 6
 # DC=False ; TH=True;  Balanced=True   => Figure 10A. But I want a partial reproduce so I guess Figure 10C is not necessary
 
-# Size of Network. Adjust this constants, please!
-cfg.ScaleFactor = 0.16  # 1.0 = 80.000
 
 # External input DC or Poisson
 cfg.DC = False  # True = DC // False = Poisson
@@ -155,20 +193,9 @@ cfg.saveJson = True
 cfg.saveDataInclude = ["simData", "simConfig"]
 cfg.recordStim = False
 cfg.printSynsAfterRule = False
-cfg.recordCells = [
-    f"L{i}{ei}_{idx}" for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
-]
-cfg.recordTraces = {
-    f"{var}_soma": {"sec": "soma", "loc": 0.5, "var": var}
-    for var in ["v", "nai", "ki", "cli", "dumpi"]
-}  # Dict with traces to record
+# Dict with traces to record
 # cfg.analysis['plotRaster'] = {'saveFig': True}                  # Plot a raster
 # cfg.analysis['plotTraces'] = {'saveFig': True}  # Plot recorded traces for this list of cells
-cfg.recordCellsSpikes = [
-    f"{pop}_{idx}"
-    for pop in ["L2e", "L2i", "L4e", "L4i", "L5e", "L5i", "L6e", "L6i"]
-    for idx in range(10)
-]  # record only spikes of cells (not ext stims)
 
 
 # # raster plot

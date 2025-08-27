@@ -1,18 +1,16 @@
-"""
-NetPyNE version of single cells from the Potjans and Diesmann thalamocortical network with multicompartment neurons
-
-netParams.py -- contains the network parameters (netParams object)
-
-Modified to include concentration of Na, K, Cl and O2 using RxD.
-
-"""
-
 from netpyne import specs
 import numpy as np
 from neuron.units import sec, mM
 import math
 import json
 import pickle
+
+
+def rand_uniform(gid=0):
+    r = h.Random()
+    r.Random123(gid, 1, 1)
+    return r.uniform(-75, -60)
+
 
 try:
     from __main__ import cfg  # import SimConfig object with params from parent module
@@ -72,23 +70,6 @@ popDepths = [
     [0.73, 1.0],
 ]
 
-all_cells = []
-# create populations
-for i, (pop, sz) in enumerate(zip(L, N_Full)):
-    for idx in range(sz):
-        netParams.popParams[f"{pop}_{idx}"] = {
-            "cellType": "SC",
-            "numCells": 1,
-            "cellModel": pop,
-            "xRange": [-cfg.borderX[0], cfg.sizeX - cfg.borderX[1]],
-            "yRange": [
-                -cfg.borderY[0] + popDepths[i][0] * cfg.sizeY,
-                cfg.sizeY * popDepths[i][1] - cfg.borderY[1],
-            ],
-            "zRange": [-cfg.borderZ[0], cfg.sizeZ - cfg.borderZ[1]],
-        }
-        all_cells.append(f"{pop}_{idx}")
-
 
 # cell property rules -- single compartment model from population SD model
 for pop in L:
@@ -121,7 +102,6 @@ netParams.synMechParams["inh"] = {
 ############################################################
 # External input parameters
 ############################################################
-# Reescaling function (move to separate module?)
 # Reescaling function (move to separate module?)
 def Reescale(ScaleFactor, C, N_Full, w_p, f_ext, tau_syn, Inp, InpDC):
     if ScaleFactor < 1.0:
@@ -159,13 +139,17 @@ def Reescale(ScaleFactor, C, N_Full, w_p, f_ext, tau_syn, Inp, InpDC):
         InpDC = np.sqrt(ScaleFactor) * InpDC * w_p * f_ext * tau_syn * 0.001  # pA
         w_p = w_p / np.sqrt(ScaleFactor)  # pA
         InpDC = InpDC + I_ext
-        N_ = [int(ScaleFactor * N) for N in N_Full]
+        N_ = [max(int(ScaleFactor * N), 1) for N in N_Full]
     else:
         InpDC = InpDC * w_p * f_ext * tau_syn * 0.001
         N_ = N_Full
 
     return InpDC, N_, w_p
 
+
+###########################################################
+#  Network Constants
+###########################################################
 
 # Frequency of external input
 f_ext = 8.0  # (Hz)
@@ -182,7 +166,7 @@ Vreset = -65 (mV) : -49 (mV) :
 #Fixed firing threshold
 Vteta  = -50 (mV)"""
 # Membrane capacity
-C_m = cfg.Cm / (2e-8 * np.pi * cfg.somaR**2)  # pF
+C_m = cfg.Cm / (2e-8 * np.pi * cfg.somaR ** 2)  # pF
 # Mean amplitude of the postsynaptic potential (in mV).
 w_v = 0.15
 # Mean amplitude of the postsynaptic potential (in pA).
@@ -214,7 +198,10 @@ C = np.array(
 
 # Population size N
 L = ["L2e", "L2i", "L4e", "L4i", "L5e", "L5i", "L6e", "L6i"]
-N_Full = np.array([20683, 5834, 21915, 5479, 4850, 1065, 14395, 2948, 902])
+if cfg.singleCells:
+    N_Full = np.array([1 for _ in L])
+else:
+    N_Full = np.array(cfg.N_Full)
 
 # Number of Input per Layer
 Inp = np.array([1600, 1500, 2100, 1900, 2000, 1900, 2900, 2100])
@@ -234,8 +221,10 @@ else:
         InpPoiss = InpUnb * cfg.ScaleFactor
 
 InpDC, N_, w_p = Reescale(cfg.ScaleFactor, C, N_Full, w_p, f_ext, tau_syn, Inp, InpDC)
-print("Inputs", InpDC, N_, w_p)
 
+############################################################
+# NetPyNE Network Parameters (netParams)
+############################################################
 
 netParams.delayMin_e = 1.5
 netParams.ddelay = 0.5
@@ -243,27 +232,85 @@ netParams.delayMin_i = 0.75
 netParams.weightMin = w_p
 netParams.dweight = 0.1
 
+# cell property rules
+for pop in L:
+    cellRule = netParams.importCellParams(
+        label="cellRule",
+        fileName="Neuron.py",
+        conds={"cellType": pop, "cellModel": pop},
+        cellName=pop,
+    )
+    netParams.cellParams[pop + "Rule"] = cellRule
+
+# ------------------------------------------------------------------------------
+# create populations
+all_cells = []
+for i in range(0, 8):
+    if (i == 0) or (i == 1):
+        netParams.popParams[L[i]] = {
+            "cellType": str(L[i]),
+            "numCells": int(N_[i]),
+            "cellModel": L[i],
+            "xRange": [0.0, cfg.sizeX],
+            "yRange": [popDepths[i][0] * cfg.sizeY, cfg.sizeY * popDepths[i][1]],
+            "zRange": [0.0, cfg.sizeZ],
+        }
+    elif (i == 6) or (i == 7):
+        netParams.popParams[L[i]] = {
+            "cellType": str(L[i]),
+            "numCells": int(N_[i]),
+            "cellModel": L[i],
+            "xRange": [0.0, cfg.sizeX],
+            "yRange": [
+                popDepths[i][0] * cfg.sizeY,
+                cfg.sizeY * popDepths[i][1] - 2 * cfg.somaR,
+            ],
+            "zRange": [0.0, cfg.sizeZ],
+        }
+    else:
+        netParams.popParams[L[i]] = {
+            "cellType": str(L[i]),
+            "numCells": int(N_[i]),
+            "cellModel": L[i],
+            "xRange": [0.0, cfg.sizeX],
+            "yRange": [popDepths[i][0] * cfg.sizeY, cfg.sizeY * popDepths[i][1]],
+            "zRange": [0.0, cfg.sizeZ],
+        }
+    all_cells.append(L[i])
+
+netParams.synMechParams["exc"] = {
+    "mod": "Exp2Syn",
+    "tau1": 0.8,
+    "tau2": 5.3,
+    "e": 0,
+}  # NMDA synaptic mechanism
+netParams.synMechParams["inh"] = {
+    "mod": "Exp2Syn",
+    "tau1": 0.6,
+    "tau2": 8.5,
+    "e": -75,
+}  # GABA synaptic mechanism
+
 if cfg.DC == False:  # External Input as Poisson
     for r in range(0, 8):
         netParams.popParams["poiss" + str(L[r])] = {
-            "numCells": 1,
+            "numCells": N_[r],
             "cellModel": "NetStim",
-            "rate": InpPoiss[r] * f_ext,
+            "rate": InpPoiss[r] * f_ext * cfg.poissonRateFactor,
             "start": 0.0,
             "noise": 1.0,
             "delay": 0,
         }
 
         auxConn = np.array([range(0, N_[r], 1), range(0, N_[r], 1)])
-        for idx in range(10):
-            netParams.connParams[f"poiss->{L[r]}_{idx}"] = {
-                "preConds": {"pop": "poiss" + str(L[r])},
-                "postConds": {"pop": f"{L[r]}_{idx}"},
-                # "connList": auxConn.T,
-                "weight": f"max(0, {cfg.excWeight} * (weightMin+normal(0,dweight*weightMin)))",
-                "delay": 0.5,
-                "synMech": "exc",
-            }  # 1 delay
+        netParams.connParams["poiss->" + str(L[r])] = {
+            "preConds": {"pop": "poiss" + str(L[r])},
+            "postConds": {"pop": L[r]},
+            "connList": auxConn.T,
+            "weight": f"max(0, {cfg.excWeight*cfg.scaleConnWeightNetStims} * (weightMin+normal(0,dweight*weightMin*{cfg.scaleConnWeightNetStimStd**2})))",
+            "delay": 0.5,
+            "synMech": "exc",
+        }  # 1 delay
 
 # Thalamus Input: increased of 15Hz that lasts 10 ms
 # 0.15 fires in 10 ms each 902 cells -> number of spikes = T*f*N_ = 0.15*902 -> 1 spike each N_*0.15
@@ -274,7 +321,7 @@ if cfg.TH == True:
     for r in [2, 3, 6, 7]:
         nTH = int(np.sqrt(cfg.ScaleFactor) * InTH[r] * fth * Tth / 1000)
         netParams.popParams["bkg_TH" + str(L[r])] = {
-            "numCells": 1,
+            "numCells": N_[r],
             "cellModel": "NetStim",
             "rate": 2 * (1000 * nTH) / Tth,
             "start": 200.0,
@@ -283,16 +330,71 @@ if cfg.TH == True:
             "delay": 0,
         }
         auxConn = np.array([range(0, N_[r], 1), range(0, N_[r], 1)])
-        for idx in range(10):
-            netParams.connParams[f"bkg_TH->{L[r]}_{idx}"] = {
-                "preConds": {"pop": "bkg_TH" + str(L[r])},
-                "postConds": {"pop": f"{L[r]}_{idx}"},
-                # "connList": auxConn.T,
-                "weight": f"max(0, {cfg.excWeight} * (weightMin +normal(0,dweight*weightMin)))",
-                "synMech": "exc",
-                "delay": 0.5,
-            }  # 1 delay
+        netParams.connParams["bkg_TH->" + str(L[r])] = {
+            "preConds": {"pop": "bkg_TH" + str(L[r])},
+            "postConds": {"pop": L[r]},
+            "connList": auxConn.T,
+            "weight": f"max(0, {cfg.excWeight * cfg.scaleConnWeightNetStims} * (weightMin +normal(0,dweight*weightMin*{cfg.scaleConnWeightNetStimStd**2})))",
+            "delay": 0.5,
+            "synMech": "exc",
+        }  # 1 delay
 
+############################################################
+# Connectivity parameters
+############################################################
+
+if cfg.connected:
+    for r in range(0, 8):
+        for c in range(0, 8):
+            if L[c][-1] == "e":
+                syn = "exc"
+                weightScale = cfg.excWeight
+            else:
+                syn = "inh"
+                weightScale = cfg.inhWeightScale * cfg.excWeight
+            if (c % 2) == 0:
+                if c == 2 and r == 0:
+                    netParams.connParams[str(L[c]) + "->" + str(L[r])] = {
+                        "preConds": {"pop": L[c]},  # conditions of presyn cells
+                        "postConds": {"pop": L[r]},  # conditions of postsyn cells
+                        "divergence": cfg.ScaleFactor
+                        * (
+                            np.log(1.0 - C[r][c])
+                            / np.log(1.0 - 1.0 / (N_Full[r] * N_Full[c]))
+                        )
+                        / N_Full[c],
+                        "weight": f"2*max(0, {weightScale} * (weightMin +normal(0,dweight*weightMin)))",  # synaptic weight
+                        "delay": "max(0.1, delayMin_e +normal(0,ddelay*delayMin_e))",  # transmission delay (ms)
+                        "synMech": syn,
+                    }
+                else:
+                    netParams.connParams[str(L[c]) + "->" + str(L[r])] = {
+                        "preConds": {"pop": L[c]},  # conditions of presyn cells
+                        "postConds": {"pop": L[r]},  # conditions of postsyn cells
+                        "divergence": cfg.ScaleFactor
+                        * (
+                            np.log(1.0 - C[r][c])
+                            / np.log(1.0 - 1.0 / (N_Full[r] * N_Full[c]))
+                        )
+                        / N_Full[c],
+                        "weight": f"max(0, {weightScale} *(weightMin +normal(0,dweight*weightMin)))",  # synaptic weight
+                        "delay": "max(0.1, delayMin_e +normal(0,ddelay*delayMin_e))",  # transmission delay (ms)
+                        "synMech": syn,
+                    }  # synaptic mechanism
+            else:  # synaptic mechanism
+                netParams.connParams[str(L[c]) + "->" + str(L[r])] = {
+                    "preConds": {"pop": L[c]},  # conditions of presyn cells
+                    "postConds": {"pop": L[r]},  # conditions of postsyn cells
+                    "divergence": cfg.ScaleFactor
+                    * (
+                        np.log(1.0 - C[r][c])
+                        / np.log(1.0 - 1.0 / (N_Full[r] * N_Full[c]))
+                    )
+                    / N_Full[c],
+                    "weight": f"4*max(0, {weightScale} * (weightMin +normal(0,dweight*weightMin)))",  # synaptic weight
+                    "delay": "max(0.1, delayMin_i +normal(0,ddelay*delayMin_i))",  # transmission delay (ms)
+                    "synMech": syn,
+                }  # synaptic mechanism
 
 ############################################################
 # RxD params
@@ -301,7 +403,9 @@ if cfg.TH == True:
 ### constants
 e_charge = 1.60217662e-19
 scale = 1e-14 / e_charge
-alpha = 5.3
+alpha = 5.3  # g/mol
+dx = cfg.dx
+
 constants = {
     "e_charge": e_charge,
     "scale": scale,
@@ -316,9 +420,8 @@ constants = {
     "epsilon_k_max": 0.25 / sec,
     "epsilon_o2": 0.17 / sec,
     "vtau": 1 / 250.0,
-    "g_gliamax": 5 * mM / sec,
     "beta0": 7.0,
-    "avo": 6.0221409 * (10**23),
+    "avo": 6.0221409 * (10 ** 23),
     "p_max": cfg.pmax * mM / sec,
     "nao_initial": 144.0,
     "nai_initial": 18.0,
@@ -329,8 +432,10 @@ constants = {
     "clo_initial": 130.0,
     "cli_initial": 6.0,
     "o2_bath": cfg.o2_bath,
+    "o2_init": cfg.o2_init,
     "v_initial": cfg.hParams["v_init"],
 }
+
 
 # sodium activation 'm'
 alpha_m = "(0.32 * (rxd.v + 54.0))/(1.0 - rxd.rxdmath.exp(-(rxd.v + 54.0)/4.0))"
@@ -359,6 +464,97 @@ alpha_n0 = (0.032 * (constants["v_initial"] + 52.0)) / (
 beta_n0 = 0.5 * math.exp(-(constants["v_initial"] + 57.0) / 40.0)
 n_initial = alpha_n0 / (beta_n0 + 1.0)
 
+
+### reactions
+gna = "gnabar*mgate**3*hgate"
+gk = "gkbar*ngate**4"
+fko = "1.0 / (1.0 + rxd.rxdmath.exp(16.0 - kko[ecs] / vol_ratio[ecs]))"
+nkcc1A = "rxd.rxdmath.log((kki[cyt] * cli[cyt] / vol_ratio[cyt]**2) / (kko[ecs] * clo[ecs] / vol_ratio[ecs]**2))"
+nkcc1B = "rxd.rxdmath.log((nai[cyt] * cli[cyt] / vol_ratio[cyt]**2) / (nao[ecs] * clo[ecs] / vol_ratio[ecs]**2))"
+nkcc1 = f"(unkcc1 * ({fko}) * ({nkcc1A} + {nkcc1B}))"
+kcc2 = "(ukcc2 * rxd.rxdmath.log((kki[cyt] * cli[cyt] * vol_ratio[cyt]**2) / (kko[ecs] * clo[ecs] * vol_ratio[ecs]**2)))"
+
+# Nerst equation - reversal potentials
+ena = "26.64 * rxd.rxdmath.log(nao[ecs]*vol_ratio[cyt]/(nai[cyt]*vol_ratio[ecs]))"
+ek = "26.64 * rxd.rxdmath.log(kko[ecs]*vol_ratio[cyt]/(kki[cyt]*vol_ratio[ecs]))"
+ecl = "26.64 * rxd.rxdmath.log(cli[cyt]*vol_ratio[ecs]/(clo[ecs]*vol_ratio[cyt]))"
+
+o2ecs = "o2_extracellular[ecs_o2]"
+# Wei model has o2 baseline 32mg/L, i.e. varies between 0 and 6.0mM
+# Our model has o2 baseline of 0.06mM bath or 0.04mM initial
+# to provide a similar sigmoid curve for the range of oxygen considered
+# currents were scaled by 32/0.05 = 640 mg/L/mM
+rescale_o2 = 32 * 20
+o2switch = "(1.0 + rxd.rxdmath.tanh(1e4 * (%s - 5e-4))) / 2.0" % (o2ecs)
+p = f"{o2switch} / (1.0 + rxd.rxdmath.exp((20.0 - ({o2ecs}/vol_ratio[ecs]) * {rescale_o2})/3.0))"
+# pump relation to intracellular Na+ and extracellular K+
+pumpA = f"(1.0 / (1.0 + rxd.rxdmath.exp(({cfg.KNai} - nai[cyt] / vol_ratio[cyt])/3.0)))"
+pumpB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kko[ecs] / vol_ratio[ecs])))"
+pump_max = f"p_max * {pumpA} * {pumpB}"  # pump rate with unlimited o2
+pump = f"{p} * {pump_max}"  # pump rate scaled by available o2
+
+pumpAg = "(1.0 / (1.0 + rxd.rxdmath.exp((25 - gnai_initial)/3.0)))"
+pumpBg = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.GliaKKo} - kko[ecs] / vol_ratio[ecs])))"
+
+avo = 6.0221409 * (10 ** 23)
+volume_scale = 1e-18 * avo / cfg.sa2v
+osm = "(1.1029 - 0.1029*rxd.rxdmath.exp( ( (nao[ecs] + kko[ecs] + clo[ecs] + 18.0)/vol_ratio[ecs] - (nai[cyt] + kki[cyt] + cli[cyt] + 132.0)/vol_ratio[cyt])/20.0))"
+scalei = str(avo * 1e-18)
+scaleo = str(avo * 1e-18)
+
+
+# update constants to ensure net zero flux at RMP
+evalInit = {
+    "vol_ratio[ecs]": "1.0",
+    "vol_ratio[cyt]": "1.0",
+    "rxd.rxdmath": "math",
+    "rxd.v": constants["v_initial"],
+    "kki[cyt]": constants["ki_initial"],
+    "kko[ecs]": constants["ko_initial"],
+    "nai[cyt]": constants["nai_initial"],
+    "nao[ecs]": constants["nao_initial"],
+    "cli[cyt]": constants["cli_initial"],
+    "clo[ecs]": constants["clo_initial"],
+    "o2_extracellular[ecs_o2]": constants["o2_init"],
+    "ngate": n_initial,
+    "mgate": m_initial,
+    "hgate": h_initial,
+}
+
+
+def initEval(ratestr):
+    for k, v in evalInit.items():
+        ratestr = ratestr.replace(k, str(v))
+    for k, v in constants.items():
+        ratestr = ratestr.replace(k, str(v))
+    return eval(ratestr)
+
+
+min_pmax = f"p_max * ({nkcc1} + {kcc2} + {gk} * (v_initial - {ek})/({volume_scale}))/(2*{pump_max})"
+pmin = initEval(min_pmax)
+if constants["p_max"] < pmin:
+    print("Pump current is too low to balance K+ currents")
+    print(f"p_max set to {pmin}")
+    constants["p_max"] = pmin
+
+# rescale pmax
+"""
+pA = "(1.0 / (1.0 + rxd.rxdmath.exp((25.0 - nai[cyt] / vol_ratio[cyt])/3.0)))"
+pB = "(1.0 / (1.0 + rxd.rxdmath.exp(3.5 - kko[ecs] / vol_ratio[ecs])))"
+rA = f"(1.0 / (1.0 + rxd.rxdmath.exp(({cfg.KNai} - nai[cyt] / vol_ratio[cyt])/3.0)))"
+rB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kko[ecs] / vol_ratio[ecs])))"
+rescale = initEval(f"{pA} * {pB}/({rA} * {rB})")
+constants["p_max"] = constants["p_max"] * rescale
+"""
+clbalance = f"(-(2*{nkcc1} + {kcc2}) * {volume_scale})/({ecl} - v_initial)"
+kbalance = f"({gk} * (v_initial - {ek}) + {volume_scale} * ({nkcc1} + {kcc2}  -2.0 * {pump}))  / ({ek} - v_initial)"
+nabalance = f"({gna} * (v_initial - {ena}) + ({nkcc1} + 3.0 * {pump}) * {volume_scale}) / ({ena} - v_initial)"
+
+constants["gclbar_l"] = initEval(clbalance)
+constants["gkbar_l"] = cfg.gkleak_scale * initEval(kbalance)
+constants["gnabar_l"] = initEval(nabalance)
+
+
 netParams.rxdParams["constants"] = constants
 
 ### regions
@@ -378,7 +574,7 @@ regions["ecs"] = {
     "yhi": y[1],
     "zlo": z[0],
     "zhi": z[1],
-    "dx": 50,
+    "dx": dx,
     "volume_fraction": cfg.alpha_ecs,
     "tortuosity": cfg.tort_ecs,
 }
@@ -391,7 +587,7 @@ regions["ecs_o2"] = {
     "yhi": y[1],
     "zlo": z[0],
     "zhi": z[1],
-    "dx": 50,
+    "dx": dx,
     "volume_fraction": 1.0,
     "tortuosity": 1.0,
 }
@@ -402,25 +598,8 @@ regions["ecs_o2"] = {
 
 # xregions['mem'] = {'cells' : 'all', 'secs' : 'all', 'nrn_region' : None, 'geometry' : 'membrane'}
 
-
-evaldict = {
-    "vol_ratio[ecs]": "1.0",
-    "vol_ratio[cyt]": "1.0",
-    "rxd.rxdmath": "math",
-    "kki[cyt]": constants["ki_initial"],
-    "kko[ecs]": constants["ko_initial"],
-    "nai[cyt]": constants["nai_initial"],
-    "nao[ecs]": constants["nao_initial"],
-    "cli[cyt]": constants["cli_initial"],
-    "clo[ecs]": constants["clo_initial"],
-    "ngate": n_initial,
-    "mgate": m_initial,
-    "hgate": h_initial,
-}
-
-
 regions["cyt"] = {
-    "cells": "all",
+    "cells": L,
     "secs": "all",
     "nrn_region": "i",
     "geometry": {
@@ -445,30 +624,34 @@ species["kki"] = {
     "regions": ["cyt"],
     "d": 2.62,
     "charge": 1,
+    "initial": "ki_initial",
     "name": "k",
-    "initial": constants["ki_initial"],
 }
+
 species["nai"] = {
     "regions": ["cyt"],
     "d": 1.78,
     "charge": 1,
+    "initial": "nai_initial",
     "name": "na",
-    "initial": constants["nai_initial"],
 }
 
 species["cli"] = {
     "regions": ["cyt"],
     "d": 2.1,
     "charge": -1,
+    "initial": "cli_initial",
     "name": "cl",
-    "initial": constants["cli_initial"],
 }
+
+
+netParams.rxdParams["species"] = species
 
 ### parameters
 params = {}
 params["o2_extracellular"] = {
     "regions": ["ecs_o2"],
-    "initial": 1e12,
+    "initial": constants["o2_init"],
 }  # constants['o2_bath']}
 params["kko"] = {
     "regions": ["ecs"],
@@ -490,12 +673,8 @@ params["clo"] = {
     "value": constants["clo_initial"],
 }
 
+params["dump"] = {"regions": ["cyt", "ecs", "ecs_o2"], "name": "dump"}
 
-netParams.rxdParams["species"] = species
-
-
-# params['ecsbc'] = {'regions' : ['ecs', 'ecs_o2'], 'name' : 'ecsbc', 'value' :
-#    '1 if (abs(node.x3d - ecs._xlo) < ecs._dx[0] or abs(node.x3d - ecs._xhi) < ecs._dx[0] or abs(node.y3d - ecs._ylo) < ecs._dx[1] or abs(node.y3d - ecs._yhi) < ecs._dx[1] or abs(node.z3d - ecs._zlo) < ecs._dx[2] or abs(node.z3d - ecs._zhi) < ecs._dx[2]) else 0'}
 
 netParams.rxdParams["parameters"] = params
 
@@ -505,76 +684,37 @@ netParams.rxdParams["states"] = {
     "mgate": {"regions": ["cyt", "mem"], "initial": m_initial, "name": "mgate"},
     "hgate": {"regions": ["cyt", "mem"], "initial": h_initial, "name": "hgate"},
     "ngate": {"regions": ["cyt", "mem"], "initial": n_initial, "name": "ngate"},
-    "dump": {"regions": ["cyt", "ecs", "ecs_o2"], "name": "dump"},
+    "o2_consumed": {"regions": ["ecs_o2"], "initial": 0, "name": "o2_consumed"},
 }
 
-### reactions
-gna = "gnabar*mgate**3*hgate"
-gk = "gkbar*ngate**4"
-fko = "1.0 / (1.0 + rxd.rxdmath.exp(16.0 - kko[ecs] / vol_ratio[ecs]))"
-nkcc1A = "rxd.rxdmath.log((kki[cyt] * cli[cyt] / vol_ratio[cyt]**2) / (kko[ecs] * clo[ecs] / vol_ratio[ecs]**2))"
-nkcc1B = "rxd.rxdmath.log((nai[cyt] * cli[cyt] / vol_ratio[cyt]**2) / (nao[ecs] * clo[ecs] / vol_ratio[ecs]**2))"
-nkcc1 = "unkcc1 * (%s) * (%s+%s)" % (fko, nkcc1A, nkcc1B)
-kcc2 = "ukcc2 * rxd.rxdmath.log((kki[cyt] * cli[cyt] * vol_ratio[cyt]**2) / (kko[ecs] * clo[ecs] * vol_ratio[ecs]**2))"
-
-# Nerst equation - reversal potentials
-ena = "26.64 * rxd.rxdmath.log(nao[ecs]*vol_ratio[cyt]/(nai[cyt]*vol_ratio[ecs]))"
-ek = "26.64 * rxd.rxdmath.log(kko[ecs]*vol_ratio[cyt]/(kki[cyt]*vol_ratio[ecs]))"
-ecl = "26.64 * rxd.rxdmath.log(cli[cyt]*vol_ratio[ecs]/(clo[ecs]*vol_ratio[cyt]))"
-
-o2ecs = "o2_extracellular[ecs_o2]"
-rescale_o2 = 32 * 20
-o2switch = "(1.0 + rxd.rxdmath.tanh(1e4 * (%s - 5e-4))) / 2.0" % (o2ecs)
-p = f"{o2switch} / (1.0 + rxd.rxdmath.exp((20.0 - ({o2ecs}/vol_ratio[ecs]) * {rescale_o2})/3.0))"
-# pump relation to intracellular Na+ and extracellular K+
-pumpA = f"(1.0 / (1.0 + rxd.rxdmath.exp(({cfg.KNai} - na[cyt] / vol_ratio[cyt])/3.0)))"
-pumpB = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.KKo} - kk[ecs] / vol_ratio[ecs])))"
-pump_max = f"p_max * {pumpA} * {pumpB}"  # pump rate with unlimited o2
-pump = f"{p} * {pump_max}"  # pump rate scaled by available o2
-
-gliapump = f"{cfg.GliaPumpScale} * p_max * {p} * {pumpAg} * {pumpBg}"
-g_glia = f"g_gliamax / (1.0 + rxd.rxdmath.exp(-(({o2ecs})*rescale_o2/vol_ratio[ecs] - 2.5)/0.2))"
-glia12 = "(%s) / (1.0 + rxd.rxdmath.exp((18.0 - kk[ecs] / vol_ratio[ecs])/2.5))" % (
-    g_glia
-)
-
-# epsilon_k = "(epsilon_k_max/(1.0 + rxd.rxdmath.exp(-(((%s)/vol_ratio[ecs]) * alpha - 2.5)/0.2))) * (1.0/(1.0 + rxd.rxdmath.exp((-20 + ((1.0+1.0/beta0 -vol_ratio[ecs])/vol_ratio[ecs]) /2.0))))" % (o2ecs)
-epsilon_kA = (
-    "(epsilon_k_max/(1.0 + rxd.rxdmath.exp(-((%s/vol_ratio[ecs]) * alpha - 2.5)/0.2)))"
-    % (o2ecs)
-)
-epsilon_kB = "(1.0/(1.0 + rxd.rxdmath.exp((-20 + ((1.0+1.0/beta0 - vol_ratio[ecs])/vol_ratio[ecs]) /2.0))))"
-epsilon_k = "%s * %s" % (epsilon_kA, epsilon_kB)
-
-
-volume_scale = "1e-18 * avo * %f" % (1.0 / cfg.sa2v)
-
-avo = 6.0221409 * (10**23)
-osm = "(1.1029 - 0.1029*rxd.rxdmath.exp( ( (nao[ecs] + kko[ecs] + clo[ecs] + 18.0)/vol_ratio[ecs] - (nai[cyt] + kki[cyt] + cli[cyt] + 132.0)/vol_ratio[cyt])/20.0))"
-scalei = str(avo * 1e-18)
-scaleo = str(avo * 1e-18)
 
 ### reactions
 mcReactions = {}
 
 ## volume dynamics
-"""
-mcReactions['vol_dyn'] = {'reactant' : 'vol_ratio[cyt]', 'product' : 'dump[ecs]', 
-                        'rate_f' : "-1 * (%s) * vtau * ((%s) - vol_ratio[cyt])" % (scalei, osm), 
-                        'membrane' : 'mem', 'custom_dynamics' : True,
-                        'scale_by_area' : False}
-                        
-mcReactions['vol_dyn_ecs'] = {'reactant' : 'dump[cyt]', 'product' : 'vol_ratio[ecs]', 
-                            'rate_f' : "-1 * (%s) * vtau * ((%s) - vol_ratio[cyt])" % (scaleo, osm), 
-                            'membrane' : 'mem', 'custom_dynamics' : True, 
-                            'scale_by_area' : False}
-"""
+mcReactions["vol_dyn"] = {
+    "reactant": "vol_ratio[cyt]",
+    "product": "dump[ecs]",
+    "rate_f": "-1 * (%s) * vtau * ((%s) - vol_ratio[cyt])" % (scalei, osm),
+    "membrane": "mem",
+    "custom_dynamics": True,
+    "scale_by_area": False,
+}
+
+mcReactions["vol_dyn_ecs"] = {
+    "reactant": "dump[cyt]",
+    "product": "vol_ratio[ecs]",
+    "rate_f": "-1 * (%s) * vtau * ((%s) - vol_ratio[cyt])" % (scaleo, osm),
+    "membrane": "mem",
+    "custom_dynamics": True,
+    "scale_by_area": False,
+}
 # # CURRENTS/LEAKS ----------------------------------------------------------------
 # sodium (Na) current
 mcReactions["na_current"] = {
     "reactant": "nai[cyt]",
     "product": "nao[ecs]",
-    "rate_f": "%s * (rxd.v - %s )" % (gna, ena),
+    "rate_f": f"{gna} * (rxd.v - {ena})",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
@@ -584,17 +724,16 @@ mcReactions["na_current"] = {
 mcReactions["k_current"] = {
     "reactant": "kki[cyt]",
     "product": "kko[ecs]",
-    "rate_f": "%s * (rxd.v - %s)" % (gk, ek),
+    "rate_f": f"{gk}* (rxd.v - {ek})",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
 }
-
 # nkcc1 (Na+/K+/2Cl- cotransporter)
 mcReactions["nkcc1_current1"] = {
     "reactant": "cli[cyt]",
     "product": "clo[ecs]",
-    "rate_f": "2.0 * (%s) * (%s)" % (nkcc1, volume_scale),
+    "rate_f": f"2.0 * {nkcc1} * {volume_scale}",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
@@ -603,7 +742,7 @@ mcReactions["nkcc1_current1"] = {
 mcReactions["nkcc1_current2"] = {
     "reactant": "kki[cyt]",
     "product": "kko[ecs]",
-    "rate_f": "%s * %s" % (nkcc1, volume_scale),
+    "rate_f": f"{nkcc1} * {volume_scale}",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
@@ -612,60 +751,34 @@ mcReactions["nkcc1_current2"] = {
 mcReactions["nkcc1_current3"] = {
     "reactant": "nai[cyt]",
     "product": "nao[ecs]",
-    "rate_f": "%s * %s" % (nkcc1, volume_scale),
+    "rate_f": f"{nkcc1} * {volume_scale}",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
 }
-
-
-def initEval(ratestr):
-    for k, v in evaldict.items():
-        ratestr = ratestr.replace(k, str(v))
-    for k, v in constants.items():
-        ratestr = ratestr.replace(k, str(v))
-    return eval(ratestr)
-
-
-min_pmax = f"p_max * ({nkcc1} + {kcc2} + {gk} * (v_initial - {ek})/({volume_scale}))/(2*{pump})"
-pmin = initEval(min_pmax)
-if constants["p_max"] < pmin:
-    print("Pump current is too low to balance K+ currents")
-    print(f"p_max set to {pmin}")
-    constants["p_max"] = pmin
-
-clbalance = f"-((2.0 * {nkcc1} +  {kcc2}) * {volume_scale})/({ecl} - v_initial)"
-kbalance = f"-(({nkcc1} + {kcc2} - 2 * {pump}) * {volume_scale} + ({gk} * (v_initial - {ek})))/(v_initial-{ek})"
-nabalance = f"-(({nkcc1} + 3 * {pump}) * {volume_scale} + ({gna} * (v_initial - {ena})))/(v_initial-{ena})"
-
-constants["gclbar_l"] = initEval(clbalance)
-constants["gkbar_l"] = cfg.gkleak_scale * initEval(kbalance)
-constants["gnabar_l"] = initEval(nabalance)
-
-
 # ## kcc2 (K+/Cl- cotransporter)
 mcReactions["kcc2_current1"] = {
     "reactant": "cli[cyt]",
     "product": "clo[ecs]",
-    "rate_f": "%s * %s" % (kcc2, volume_scale),
+    "rate_f": f"{kcc2} * {volume_scale}",
+    "membrane": "mem",
+    "custom_dynamics": True,
+    "membrane_flux": True,
+}
+mcReactions["kcc2_current2"] = {
+    "reactant": "kki[cyt]",
+    "product": "kko[ecs]",
+    "rate_f": f"{kcc2} * {volume_scale}",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
 }
 
-mcReactions["kcc2_current2"] = {
-    "reactant": "kki[cyt]",
-    "product": "kko[ecs]",
-    "rate_f": "%s * %s" % (kcc2, volume_scale),
-    "membrane": "mem",
-    "custom_dynamics": True,
-    "membrane_flux": True,
-}
 ## sodium leak
 mcReactions["na_leak"] = {
     "reactant": "nai[cyt]",
     "product": "nao[ecs]",
-    "rate_f": "gnabar_l * (rxd.v - %s)" % (ena),
+    "rate_f": f"gnabar_l * (rxd.v - {ena})",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
@@ -675,17 +788,16 @@ mcReactions["na_leak"] = {
 mcReactions["k_leak"] = {
     "reactant": "kki[cyt]",
     "product": "kko[ecs]",
-    "rate_f": "gkbar_l * (rxd.v - %s)" % (ek),
+    "rate_f": f"gkbar_l * (rxd.v - {ek})",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
 }
-
 # ## chlorine (Cl) leak
 mcReactions["cl_current"] = {
     "reactant": "cli[cyt]",
     "product": "clo[ecs]",
-    "rate_f": "gclbar_l * (%s - rxd.v)" % (ecl),
+    "rate_f": f"gclbar_l * ({ecl} - rxd.v)",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
@@ -695,7 +807,7 @@ mcReactions["cl_current"] = {
 mcReactions["pump_current"] = {
     "reactant": "kki[cyt]",
     "product": "kko[ecs]",
-    "rate_f": "(-2.0 * %s * %s)" % (pump, volume_scale),
+    "rate_f": f"(-2.0 * {pump} * {volume_scale})",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
@@ -704,22 +816,33 @@ mcReactions["pump_current"] = {
 mcReactions["pump_current_na"] = {
     "reactant": "nai[cyt]",
     "product": "nao[ecs]",
-    "rate_f": "(3.0 * %s * %s)" % (pump, volume_scale),
+    "rate_f": f"(3.0 * {pump} * {volume_scale})",
     "membrane": "mem",
     "custom_dynamics": True,
     "membrane_flux": True,
 }
-
 # O2 depletrion from Na/K pump in neuron
 mcReactions["oxygen"] = {
     "reactant": o2ecs,
-    "product": "dump[cyt]",
-    "rate_f": "(%s) * (%s)" % (pump, volume_scale),
+    "product": "o2_consumed[ecs_o2]",
+    "rate_f": "(1/5) * (%s) * (%s)" % (pump, volume_scale),
     "membrane": "mem",
     "custom_dynamics": True,
 }
 
 netParams.rxdParams["multicompartmentReactions"] = mcReactions
+
+reactions = {}
+## Glial O2 depletion
+"""
+reactions["glia_oxygen"] = {
+    "reactant": o2ecs,
+    "product": "o2_consumed[ecs_o2]",
+    "rate_f": "(1/5) * (%s)" % (gliapump),
+    "custom_dynamics": True,
+}
+"""
+netParams.rxdParams["reactions"] = reactions
 
 # RATES--------------------------------------------------------------------------
 rates = {}
@@ -744,35 +867,24 @@ rates["n_gate"] = {
     "rate": "((%s) * (1.0 - ngate)) - ((%s) * ngate)" % (alpha_n, beta_n),
 }
 
-## diffusion
-# rates['o2diff'] = {'species' : o2ecs, 'regions' : ['ecs_o2'],
-#     'rate' : 'ecsbc * (epsilon_o2 * (o2_bath - %s/vol_ratio[ecs]))' % (o2ecs)} # original
-
-# rates['o2diff'] = {'species' : o2ecs, 'regions' : ['ecs_o2'],
-#     'rate' : '(epsilon_o2 * (o2_bath - %s/vol_ratio[ecs]))' % (o2ecs)} # o2everywhere
-
-# rates['o2diff'] = {'species' : o2ecs, 'regions' : ['ecs_o2'],
-#     'rate' : '(epsilon_o2 * (o2_bath - %s))' % (o2ecs)} # o2everywhereNoVolScale
-"""
-rates['kdiff'] = {'species' : 'kko[ecs]', 'regions' : ['ecs'],
-    'rate' : 'ecsbc * ((%s) * (ko_initial - kko[ecs]/vol_ratio[ecs]))' % (epsilon_k)}
-
-rates['nadiff'] = {'species' : 'nao[ecs]', 'regions' : ['ecs'],
-    'rate' : 'ecsbc * ((%s) * (nao_initial - nao[ecs]/vol_ratio[ecs]))' % (epsilon_k)}
-
-rates['cldiff'] = {'species' : 'clo[ecs]', 'regions' : ['ecs'],
-    'rate' : 'ecsbc * ((%s) * (clo_initial - clo[ecs]/vol_ratio[ecs]))' % (epsilon_k)}
-"""
-## Glia K+/Na+ pump current
-"""
-rates['glia_k_current'] = {'species' : 'kko[ecs]', 'regions' : ['ecs'],
-    'rate' : '(-(%s) - (2.0 * (%s)))' % (glia12, gliapump)}
-
-rates['glia_na_current'] = {'species' : 'nao[ecs]', 'regions' : ['ecs'],
-    'rate' : '(3.0 * (%s))' % (gliapump)}
-"""
-## Glial O2 depletion
-# rates['o2_pump'] = {'species' : o2ecs, 'regions' : ['ecs_o2'],
-#     'rate' : '-(%s)' % (gliapump)}
 
 netParams.rxdParams["rates"] = rates
+
+# # plot statistics for 10% of cells
+# scale = 10 #max(1,int(sum(N_[:8])/1000))
+# include = [(pop, range(0, netParams.popParams[pop]['numCells'], scale)) for pop in L]
+# cfg.analysis['plotSpikeStats']['include'] = include
+
+
+# v0.0 - combination of netParams from ../uniformdensity and netpyne PD thalamocortical model
+# v0.1 - got rid of all non cortical cells, background stim
+# v0.2 - adding connections back in
+# v0.3 - scaled original connections by 1e-7
+# v0.4 - original poisson, rather than netstim inputs
+# v0.5 - now includes thalamocortical inputs
+# v0.6 - different weight scaling for excitation and inhibition
+# v0.7 - using netParams.scaleConnWeight (which excludes netstims)
+# v0.8 - normally distributed connection weights based on whats worked for fixed conns
+# v1.0 - added in o2 sources based on capillaries identified from histology
+# v1.1 - updated parameters to avoid SD in baseline simulations
+# v1.2 - use pump rather than pump_max to determine leak conductance (initial o2 is lower than max).
