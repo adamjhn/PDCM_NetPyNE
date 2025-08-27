@@ -23,7 +23,7 @@ def batch():
     fitnessFuncArgs["maxFitness"] = 1_000_000_000_000
     fitnessFuncArgs["data"] = pickle.load(
         open(
-            "sample_pd_scale-1.0_DC-0_TH-1_Balanced-1_dur-1.pkl",
+            "/home/ajn48/project/PDCM_NetPyNE/sample_pd_scale-1.0_DC-0_TH-1_Balanced-1_dur-1.pkl",
             "rb",
         )
     )
@@ -31,7 +31,7 @@ def batch():
     def fitnessFunc(sd, **kwargs):
         print("calc fitness")
         spkid = np.array(sd["spkid"])
-        spkt = np.array(sd["spkt"]) - 2 # subtract 2ms added delay
+        spkt = np.array(sd["spkt"])
         data = kwargs["data"]
         score, rate, rxdscore, o2score = 0, 0, 0, 0
         for gid, cell in enumerate(
@@ -51,7 +51,7 @@ def batch():
             for ion in ["k", "na", "cl"]:
                 trace = sd[f"{ion}i_soma"][f"cell_{gid}"]
                 rxdscore += abs(trace[0] - trace[-1]) / trace[0]
-            o2score += sd["o2_consumedo_soma"][f"cell_{gid}"][-1]  # amount of oxygen consumed
+            o2score += sd["dumpi_soma"][f"cell_{gid}"][-1]  # amount of oxygen consumed
         print(
             f"rate{rate} score {score}, rxdscore {rxdscore}, o2score {o2score}: {1e3*score + rxdscore + o2score}"
         )
@@ -60,31 +60,41 @@ def batch():
         )
 
     # create Batch object with paramaters to modify, and specifying files to use
-    b = Batch(params=params, cfgFile="cfgSS.py", netParamsFile="netParamsSSVecStim.py")
+    b = Batch(params=params, cfgFile="cfgSS.py", netParamsFile="netParamsSS.py")
 
     # Set output folder, grid method (all param combinations), and run configuration
     b.method = "optuna"
     b.runCfg = {
-	'type': 'mpi_direct',
-        'script': 'initSSVecStim.py',
-	# options required only for hpc
-	'mpiCommand': 'mpiexec',
-	'nodes': 1,
-	'coresPerNode': 1,
-	'allocation': 'default',
-	'email': 'adam.newton@neurosim.downstate.edu',
-	'reservation': None,
-	'folder': '/home/adam/models/PDCM_NetPyNE.BPOCells'
-	#'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
+        "type": "hpc_slurm",
+        "script": "initSS.py",
+        # options required only for mpi_direct or hpc
+        "mpiCommand": "",
+        "nodes": 1,
+        "coresPerNode": 1,
+        "walltime": "0-00:20:00",
+        "partition": "scavenge",
+        "allocation": "mcdougal",
+        # "email": "adam.newton@yale.edu",
+        #'reservation': None,
+        "folder": "/home/ajn48/project/PDCM_NetPyNE",
+        "custom": """#SBATCH --partition=scavenge
+#SBATCH --requeue
+#module load miniconda
+#module load OpenMPI/4.0.5-GCC-10.2.0 
+#source /vast/palmer/apps/avx2/software/miniconda/23.1.0/etc/profile.d/conda.sh
+#conda activate py310
+"""
+        #'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
     b.batchLabel = "weightsRate"
-    b.saveFolder = "/tmp/" + b.batchLabel
+    print(f"/vast/palmer/scratch/mcdougal/ajn48/{b.batchLabel}")
+    b.saveFolder = "/vast/palmer/scratch/mcdougal/ajn48/" + b.batchLabel
 
     b.optimCfg = {
         "fitnessFunc": fitnessFunc,  # fitness expression (should read simData)
         "fitnessFuncArgs": fitnessFuncArgs,
         "maxFitness": fitnessFuncArgs["maxFitness"],
-        "maxiters": 10,  #    Maximum number of iterations (1 iteration = 1 function evaluation)
+        "maxiters": 10000,  #    Maximum number of iterations (1 iteration = 1 function evaluation)
         "maxtime": 8 * 60 * 60,  #    Maximum time allowed, in seconds
         "maxiter_wait": 120,
         "time_sleep": 20,

@@ -1,7 +1,7 @@
 import math
 
 
-def d(train_a, train_b, tau):
+def d(train_a, train_b, tau, offset=0):
     """
     Compute the van Rossum metric for two spike trains.
 
@@ -13,7 +13,7 @@ def d(train_a, train_b, tau):
     Returns:
         float: The van Rossum distance between the two spike trains.
     """
-    trains = [train_a, train_b]
+    trains = [train_a, train_b - offset]
     sq = [norm_train(trains[train_c], tau) for train_c in range(2)]
     return math.sqrt(sq[0] + sq[1] - corr(trains, tau))
 
