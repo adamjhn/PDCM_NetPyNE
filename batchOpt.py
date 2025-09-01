@@ -74,17 +74,17 @@ def batch():
 	'allocation': 'default',
 	'email': 'adam.newton@neurosim.downstate.edu',
 	'reservation': None,
-	'folder': '/home/adam/models/PDCM_NetPyNE.BPOCells'
+	'folder': '/ddn/adamjhn/models/PDCM_NetPyNE'
 	#'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
     b.batchLabel = "weightsRate"
-    b.saveFolder = "/tmp/" + b.batchLabel
+    b.saveFolder = "/ddn/adamjhn/data/" + b.batchLabel
 
     b.optimCfg = {
         "fitnessFunc": fitnessFunc,  # fitness expression (should read simData)
         "fitnessFuncArgs": fitnessFuncArgs,
         "maxFitness": fitnessFuncArgs["maxFitness"],
-        "maxiters": 10,  #    Maximum number of iterations (1 iteration = 1 function evaluation)
+        "maxiters": 10000,  #    Maximum number of iterations (1 iteration = 1 function evaluation)
         "maxtime": 8 * 60 * 60,  #    Maximum time allowed, in seconds
         "maxiter_wait": 120,
         "time_sleep": 20,

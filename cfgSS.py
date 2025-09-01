@@ -65,7 +65,7 @@ cfg.cellPops = [
 cfg.cellPopsInit = (-85, -60)
 cfg.recordCellsSpikes = [
     f"L{i}{ei}_{idx}" for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
-] + ['L2e_0_exc', 'L2e_0_inh']
+]
 
 if cfg.recordStim:
     cfg.recordCellsSpikes += [
