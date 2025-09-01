@@ -6,6 +6,6 @@ echo $numproc
 for (( i=1; i<=$numproc; i++ ))
     do
         echo "Running batch process $i ..."
-        screen -Ldm python batchOpt.py @# Run the models
+        screen -Ldm python batchOptSingleCell.py @# Run the models
         sleep 1
     done
