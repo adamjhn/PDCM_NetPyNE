@@ -296,8 +296,11 @@ constants["gclbar_l"] = initEval(clbalance)
 constants["gkbar_l"] = cfg.gkleak_scale * initEval(kbalance)
 constants["gnabar_l"] = initEval(nabalance)
 
-if constants["gkbar_l"] < 0:
-    raise Exception(f"Negative leak gkbar_l: {constants['gkbar_l']}")
+if constants["gkbar_l"] < 0
+    if abs(constants["gkbar_l"])< 1e-9:
+        constants["gkbar_l"] = 0
+    else:
+        raise Exception(f"Negative leak gkbar_l: {constants['gkbar_l']}")
 netParams.rxdParams["constants"] = constants
 
 ### regions
