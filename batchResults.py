@@ -1,12 +1,13 @@
 import pandas as pd
 from sqlite3 import connect
 
-conn = connect('/tmp/weightsRate/weightsRate_storage.db')
+simLabel = "cellFit" #"weightsRate"
+conn = connect(f'/data/adam/{simLabel}/{simLabel}_storage.db')
 
 def batch_params():
     params = dict()
-    params["excWeight"] = [0, 5e-3]
-    params["inhWeightScale"] = [0.1, 10]
+    #params["excWeight"] = [0, 5e-3]
+    #params["inhWeightScale"] = [0.1, 10]
     params["gnabar"] = [1e-4, 1e-2]
     params["gkbar"] = [1e-4, 1e-2]
     params["ukcc2"] = [1e-6, 1]
