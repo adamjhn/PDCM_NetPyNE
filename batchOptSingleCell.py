@@ -24,27 +24,38 @@ target = [
     else 0
     for a in amps
 ]
+rheobase = (Vth - Vreset)/R
 
 
 def batch():
     # parameters space to explore
     params = specs.ODict()
-    params["gnabar"] = [1e-4, 1e-2]
-    params["gkbar"] = [1e-4, 1e-2]
+    params["gnabar"] = [1e-4, 1e-1]
+    params["gkbar"] = [1e-4, 1e-1]
     params["ukcc2"] = [1e-6, 1]
     params["unkcc1"] = [1e-6, 1]
     params["pmax"] = [1e-6, 100]
-    params["gpas"] = [0, 0.0001]
+    params["gpas"] = [0, 1e-2]
 
     # fitness function
     fitnessFuncArgs = {}
-    fitnessFuncArgs["maxFitness"] = 1_000_000_000_000_000
+    fitnessFuncArgs["maxFitness"] = 1_000_000
 
     def fitnessFunc(sd, **kwargs):
         print("calc fitness")
-        spkid = np.array(sd["spkid"])
-        freq = np.array([sum(spkid == i) for i, _ in enumerate(amps)])
-        freqscore = sum((target - freq) ** 2)
+
+        if len(sd["spkid"]) > 0:
+            spkid = np.array(sd["spkid"])
+            freq = np.array([sum(spkid == i) for i, _ in enumerate(amps)])
+            # range 0-1 unless freq> 2 * target[-1]
+            freqscore = sum(abs(target - freq))/len(amps)/target[-1]
+
+            # range 0-1
+            rheobaseScore = abs(rheobase-amps[spkid.min()])/(amps[-1]-rheobase)
+        else:
+            freqscore = 1.0
+            rheobaseScore = 1.0
+
         rxdscore, o2score = 0, 0
         for gid, _ in enumerate(amps):
             for ion in ["k", "na", "cl"]:
@@ -54,7 +65,7 @@ def batch():
                 -1
             ]  # amount of oxygen consumed
         print(f"freqscore {freqscore}, rxdscore {rxdscore}, o2score {o2score}")
-        return min(kwargs["maxFitness"], 1e4 * freqscore + 1e2 * rxdscore + o2score)
+        return min(kwargs["maxFitness"], 1e2 * (freqscore + rheobaseScore) + rxdscore + o2score)
 
     # create Batch object with paramaters to modify, and specifying files to use
     b = Batch(params=params, cfgFile="cfgSS.py", netParamsFile="netParamsSingleCell.py")
@@ -74,7 +85,7 @@ def batch():
         "folder": "/home/adam/models/PDCM_NetPyNE.BPOCells"
         #'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
-    b.batchLabel = "cellFit"
+    b.batchLabel = "cellFit2"
     b.saveFolder = "/ddn/adamjhn/data/" + b.batchLabel
 
     b.optimCfg = {
