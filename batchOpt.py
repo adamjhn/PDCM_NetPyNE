@@ -9,14 +9,8 @@ import cfgSS as cfg
 def batch():
     # parameters space to explore
     params = specs.ODict()
-    params["excWeight"] = [0, 5e-3]
+    params["excWeight"] = [0, 1e-1]
     params["inhWeightScale"] = [0.1, 10]
-    params["gnabar"] = [1e-4, 1e-2]
-    params["gkbar"] = [1e-4, 1e-2]
-    params["ukcc2"] = [1e-6, 1]
-    params["unkcc1"] = [1e-6, 1]
-    params["pmax"] = [1e-6, 100]
-    params["gpas"] = [0, 0.0001]
 
     # fitness function
     fitnessFuncArgs = {}
