@@ -134,12 +134,12 @@ cfg.excWeight = 1e-3
 cfg.inhWeightScale = 3
 cfg.weightMin = 0.1
 cfg.dWeight = 0.1 
-cfg.gnabar = 30 / 1000
-cfg.gkbar = 25 / 1000
-cfg.ukcc2 = 0.3
-cfg.unkcc1 = 0.1
-cfg.pmax = 3
-cfg.gpas = 0.0001
+cfg.gnabar = 0.04379242080873301  #30 / 1000
+cfg.gkbar = 0.0022763130723870467 #25 / 1000
+cfg.ukcc2 = 0.14584466391006062   #0.3
+cfg.unkcc1 = 0.43779404087088447  #0.1
+cfg.pmax = 95.86955347604031      #3
+cfg.gpas = 0.00010419914356828687 #0.0001
 cfg.gkleak_scale = 1
 cfg.KKo = 5.3
 cfg.KNai = 27.9
@@ -185,7 +185,7 @@ cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeightScale}"
 # Recording and plotting options
 ###########################################################
 
-cfg.recordStep = 100  # Step size in ms to save data (e.g. V traces, LFP, etc)
+cfg.recordStep = 250  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
 cfg.saveFolder = "dataSS3/"
 cfg.savePickle = False  # Save params, network and sim output to pickle file
