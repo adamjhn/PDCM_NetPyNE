@@ -36,7 +36,7 @@ except:
 ############################################################
 
 # Single cell model
-amps = np.linspace(0.2, 2, 10)
+amps = np.linspace(0.07, 0.7, 10)
 all_cells = [f"L2e{i}" for i, _ in enumerate(amps)]
 cfg.recordCells = all_cells
 cfg.recordCellsSpikes = all_cells
@@ -272,7 +272,9 @@ def initEval(ratestr):
     return eval(ratestr)
 
 
-min_pmax = f"p_max * ({nkcc1} + {kcc2} + {gk} * (v_initial - {ek})/({volume_scale}))/(2*{pump_max})"
+# pump rate p_max that will balance K+ channel, NKCC1 and KCC2 i.e.
+# the pump required if gkbar_l = 0
+min_pmax = f"p_max * ({nkcc1} + {kcc2} + {gk} * (v_initial - {ek})/({volume_scale}))/(2*{pump})"
 pmin = initEval(min_pmax)
 if constants["p_max"] < pmin:
     print("Pump current is too low to balance K+ currents")
