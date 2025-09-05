@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlite3 import connect
 
-simLabel = "cellFit" #"weightsRate"
+simLabel = "cellFit3" #"weightsRate"
 conn = connect(f'/data/adam/{simLabel}/{simLabel}_storage.db')
 
 def batch_params():
@@ -19,7 +19,8 @@ def batch_params():
 
 params = batch_params()
 
-query = """SELECT 
+query = """SELECT
+    trials.number,
     trial_values.trial_id,
     trial_values.objective,
     trial_values.value AS trial_value"""
@@ -30,7 +31,8 @@ for k in params:
 query += """\nFROM 
     trial_values
 JOIN 
-    trial_params ON trial_values.trial_id = trial_params.trial_id
+    trial_params ON trial_values.trial_id = trial_params.trial_id,
+    trials ON trials.trial_id = trial_values.trial_id
 GROUP BY 
     trial_values.trial_id, trial_values.objective, trial_values.value;
 """
