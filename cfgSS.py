@@ -134,13 +134,15 @@ cfg.r0 = 100.0
 cfg.excWeight = 1e-3 
 cfg.inhWeightScale = 3
 cfg.weightMin = 0.1
-cfg.dWeight = 0.1 
-cfg.gnabar = 0.04382313373168493
-cfg.gkbar = 0.001637203254114645
-cfg.ukcc2 = 0.0711022860197119
-cfg.unkcc1 = 0.7005226526671068
-cfg.pmax = 85.87926123795012
-cfg.gpas = 0.00011081427663137358
+cfg.dWeight = 0.1
+# optimized single cell parameters
+cfg.gnabar = 0.014082188864974863
+cfg.gkbar = 0.04388527317642928
+cfg.ukcc2 = 0.004736215246958123
+cfg.unkcc1 = 3.5023769046490805
+cfg.pmax = 3.062009769812637
+cfg.gpas = 3.569925879901752e-07
+
 cfg.gkleak_scale = 1
 cfg.KKo = 5.3
 cfg.KNai = 27.9
