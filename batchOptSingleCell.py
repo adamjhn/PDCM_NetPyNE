@@ -30,12 +30,12 @@ rheobase = (Vth - Vreset)/R
 def batch():
     # parameters space to explore
     params = specs.ODict()
-    params["gnabar"] = [1e-3, 5e-2]
+    params["gnabar"] = [1e-3, 7.5e-2]
     params["gkbar"] = [1e-6, 5e-2]
-    params["ukcc2"] = [1e-6, 1]
-    params["unkcc1"] = [1e-6, 1]
-    params["pmax"] = [1e-6, 100]
-    params["gpas"] = [0, 1e-3]
+    params["ukcc2"] = [1e-6, 10]
+    params["unkcc1"] = [1e-6, 10]
+    params["pmax"] = [1e-6, 200]
+    params["gpas"] = [0, 1e-2]
 
     # fitness function
     fitnessFuncArgs = {}
@@ -53,8 +53,8 @@ def batch():
             # range 0-1
             rheobaseScore = abs(rheobase-amps[int(spkid.min())])/(amps[-1]-rheobase)
         else:
-            freqscore = 1.0
-            rheobaseScore = 1.0
+            freqscore = 10
+            rheobaseScore = 10
 
         rxdscore, o2score = 0, 0
         for gid, _ in enumerate(amps):
@@ -65,7 +65,7 @@ def batch():
                 -1
             ]  # amount of oxygen consumed
         print(f"freqscore {freqscore}, rxdscore {rxdscore}, o2score {o2score}")
-        return min(kwargs["maxFitness"], 1e2 * (freqscore + rheobaseScore) + rxdscore + o2score)
+        return min(kwargs["maxFitness"], (freqscore + rheobaseScore) + rxdscore + o2score)
 
     # create Batch object with paramaters to modify, and specifying files to use
     b = Batch(params=params, cfgFile="cfgSS.py", netParamsFile="netParamsSingleCell.py")
@@ -85,14 +85,14 @@ def batch():
         "folder": "/ddn/adamjhn/models/PDCM_NetPyNE"
         #'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
-    b.batchLabel = "cellFit3"
+    b.batchLabel = "cellFit4"
     b.saveFolder = "/ddn/adamjhn/data/" + b.batchLabel
 
     b.optimCfg = {
         "fitnessFunc": fitnessFunc,  # fitness expression (should read simData)
         "fitnessFuncArgs": fitnessFuncArgs,
         "maxFitness": fitnessFuncArgs["maxFitness"],
-        "maxiters": 10000,  #    Maximum number of iterations (1 iteration = 1 function evaluation)
+        "maxiters": 100_000,  #    Maximum number of iterations (1 iteration = 1 function evaluation)
         "maxtime": 8 * 60 * 60,  #    Maximum time allowed, in seconds
         "maxiter_wait": 600,
         "time_sleep": 10,

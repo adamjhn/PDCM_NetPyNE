@@ -19,7 +19,7 @@ from netpyne import sim
 from neuron import h
 from cfg import cfg
 from netParams import netParams
-
+from stats import networkStatsFromSim
 
 ############################################################
 #               Create network and run simulation
@@ -36,6 +36,8 @@ sim.setupRecording()  # setup variables to record for each cell (spikes, V trace
 sim.runSim()  # run parallel Neuron simulation
 sim.gatherData()  # gather spiking data and cell info from each node
 sim.saveData()  # save params, cell info and sim output to file (pickle,mat,txt,etc)#
+if pcid == 0:
+    networkStatsFromSim(sim, filename=os.path.join(cfg.saveFolder, "netstats.json"))
 sim.analysis.plotData()  # plot spike raster etc
 
 

@@ -22,8 +22,8 @@ cfg = specs.SimConfig()  # object of class SimConfig to store simulation configu
 # Run options
 ############################################################
 
-cfg.seeds["stim"] = 3
-cfg.duration = 2 * 1e2  # Duration of the simulation, in ms
+cfg.seeds["stim"] = 0
+cfg.duration = 1e3  # Duration of the simulation, in ms
 cfg.dt = 0.025  # Internal integration timestep to use
 cfg.verbose = 0  # Show detailed messages
 cfg.seeds["m"] = 123
@@ -106,7 +106,7 @@ cfg.secmap = {
 # DC=False ; TH=True;  Balanced=True   => Figure 10A. But I want a partial reproduce so I guess Figure 10C is not necessary
 
 # Size of Network. Adjust this constants, please!
-cfg.ScaleFactor = 0.01  # 1.0 = 80.000
+cfg.ScaleFactor = 0.16  # 1.0 = 80.000
 
 # External input DC or Poisson
 cfg.DC = False  # True = DC // False = Poisson

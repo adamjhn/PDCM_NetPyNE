@@ -9,15 +9,17 @@ import cfgSS as cfg
 def batch():
     # parameters space to explore
     params = specs.ODict()
-    params["excWeight"] = [0, 1e-1]
+    params["excWeight"] = [0, 100]
     params["inhWeightScale"] = [0.1, 10]
+    #params["gnabar"] = [0.0338, 0.0451]
+    #params["gkbar"] = [0.001386, 0.0018703]
 
     # fitness function
     fitnessFuncArgs = {}
     fitnessFuncArgs["maxFitness"] = 1_000_000_000_000
     fitnessFuncArgs["data"] = pickle.load(
         open(
-            "sample_pd_scale-1.0_DC-0_TH-1_Balanced-1_dur-1.pkl",
+            "sample_pd_scale-0.16_DC-0_TH-1_Balanced-1_dur-1.pkl",
             "rb",
         )
     )
@@ -50,7 +52,7 @@ def batch():
             f"rate{rate} score {score}, rxdscore {rxdscore}, o2score {o2score}: {1e3*score + rxdscore + o2score}"
         )
         return min(
-            kwargs["maxFitness"], 1e4 * rate + 1e2 * score + 10 * rxdscore + o2score
+            kwargs["maxFitness"],  10 * (rate +  score +  rxdscore) + o2score
         )
 
     # create Batch object with paramaters to modify, and specifying files to use
@@ -71,14 +73,14 @@ def batch():
 	'folder': '/ddn/adamjhn/models/PDCM_NetPyNE'
 	#'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
-    b.batchLabel = "weightsRate"
+    b.batchLabel = "weightsRate5"
     b.saveFolder = "/ddn/adamjhn/data/" + b.batchLabel
 
     b.optimCfg = {
         "fitnessFunc": fitnessFunc,  # fitness expression (should read simData)
         "fitnessFuncArgs": fitnessFuncArgs,
         "maxFitness": fitnessFuncArgs["maxFitness"],
-        "maxiters": 10000,  #    Maximum number of iterations (1 iteration = 1 function evaluation)
+        "maxiters": 100000,  #    Maximum number of iterations (1 iteration = 1 function evaluation)
         "maxtime": 8 * 60 * 60,  #    Maximum time allowed, in seconds
         "maxiter_wait": 120,
         "time_sleep": 20,

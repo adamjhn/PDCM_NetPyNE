@@ -33,7 +33,7 @@ except:
 # examples of  input/output relation for LIF network model
 data = pickle.load(
     open(
-        "sample_pd_scale-1.0_DC-0_TH-1_Balanced-1_dur-1.pkl",
+        "sample_pd_scale-0.16_DC-0_TH-1_Balanced-1_dur-1.pkl",
         "rb",
     )
 )
