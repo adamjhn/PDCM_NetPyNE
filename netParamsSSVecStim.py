@@ -303,21 +303,22 @@ netParams.synMechParams["inh"] = {
 ############################################################
 # Connectivity parameters
 ############################################################
-def filterTimes(inputs, weights):
-    inp = [inputs[0]]
+def filterTimes(inputs, weights, offset=-1, thresh=1e-9):
+    """ sum inputs that are less than `thresh` apart and shift by `offset`
+        The offset allows for non-zero delay when replaying the inputs.
+    """ 
+    inp = [max(0,inputs[0] + offset)]   # start with the first input
     wei = [weights[0]]
-    offset = 0
-    while inp[-1] < cfg.duration:
-        for t, w in zip(inputs[1:], weights[1:]):
-            if t + offset - 2 - inp[-1] > 1e-9:
-                inp.append(t - 2 + offset)
-                wei.append(w)
-            else:
-                wei[-1] += w
-            if inp[-1] >= cfg.duration:
-                break
+    for t, w in zip(inputs[1:], weights[1:]):
+        tnext = max(0,t + offset)       # time of next input
+        if tnext - inp[-1] > thresh:
+            inp.append(tnext)           # add next input
+            wei.append(w)
         else:
-            offset += 1e3
+            wei[-1] += w        # keep current input -- but update weight
+        # stop if input time exceeds duration
+        if inp[-1] >= cfg.duration:
+            break
     return (inp, wei)
 
 
@@ -350,7 +351,7 @@ for pop, sz in zip(L, N_Full):
                 "postConds": {"pop": f"{pop}_{idx}"},
                 'probability': 1.0,
                 "weight": weightScale,  # synaptic weight
-                "delay": 2,
+                "delay": 1,
                 "synMech": syn,
             }
 
