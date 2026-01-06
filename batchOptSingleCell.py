@@ -19,12 +19,14 @@ Vth = -50
 # caclulate target freq
 amps = netParams.amps
 target = [
-    1e3 / (taum * np.log(R * a / (Vreset - Vth + R * a)) + tauref)
-    if Vreset - Vth + R * a > 0
-    else 0
+    (
+        1e3 / (taum * np.log(R * a / (Vreset - Vth + R * a)) + tauref)
+        if Vreset - Vth + R * a > 0
+        else 0
+    )
     for a in amps
 ]
-rheobase = (Vth - Vreset)/R
+rheobase = (Vth - Vreset) / R
 
 
 def batch():
@@ -48,15 +50,18 @@ def batch():
             spkid = np.array(sd["spkid"])
             freq = np.array([sum(spkid == i) for i, _ in enumerate(amps)])
             # range 0-1 unless freq> 2 * target[-1]
-            freqscore = sum(abs(target - freq))/len(amps)/target[-1]
+            freqscore = sum(abs(target - freq)) / len(amps) / target[-1]
 
             # range 0-1
-            rheobaseScore = abs(rheobase-amps[int(spkid.min())])/(amps[-1]-rheobase)
+            rheobaseScore = abs(rheobase - amps[int(spkid.min())]) / (
+                amps[-1] - rheobase
+            )
         else:
             freqscore = 10
             rheobaseScore = 10
 
-        rxdscore, o2score = 0, 0
+        rxdscore, o2score, vscore = 0, 0, 0
+        v_min = 0
         for gid, _ in enumerate(amps):
             for ion in ["k", "na", "cl"]:
                 trace = sd[f"{ion}i_soma"][f"cell_{gid}"]
@@ -64,8 +69,17 @@ def batch():
             o2score += sd["o2_consumedo_soma"][f"cell_{gid}"][
                 -1
             ]  # amount of oxygen consumed
+            if len(sd["v_soma"][f"cell_{gid}"]) > 0:
+                v_min = min(v_min, min(sd["v_soma"][f"cell_{gid}"]))
+        if v_min < -90:
+            vscore = -(v_min + 90)
+        else:
+            vscore = 0
         print(f"freqscore {freqscore}, rxdscore {rxdscore}, o2score {o2score}")
-        return min(kwargs["maxFitness"], (freqscore + rheobaseScore) + rxdscore + o2score)
+        return min(
+            kwargs["maxFitness"],
+            (freqscore + rheobaseScore) + rxdscore + o2score + vscore,
+        )
 
     # create Batch object with paramaters to modify, and specifying files to use
     b = Batch(params=params, cfgFile="cfgSS.py", netParamsFile="netParamsSingleCell.py")
@@ -82,11 +96,11 @@ def batch():
         "allocation": "default",
         "email": "adam.newton@neurosim.downstate.edu",
         "reservation": None,
-        "folder": "/ddn/adamjhn/models/PDCM_NetPyNE"
+        "folder": "/u/adam/models/PDCM_NetPyNE" #"/ddn/adamjhn/models/PDCM_NetPyNE",
         #'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
-    b.batchLabel = "cellFit4"
-    b.saveFolder = "/ddn/adamjhn/data/" + b.batchLabel
+    b.batchLabel = "cellFit6"
+    b.saveFolder = "/tera/adam/data/" + b.batchLabel
 
     b.optimCfg = {
         "fitnessFunc": fitnessFunc,  # fitness expression (should read simData)

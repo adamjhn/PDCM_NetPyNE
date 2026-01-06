@@ -3,8 +3,8 @@ from sqlite3 import connect
 import json
 import numpy as np
 
-simLabel = "cellFit4" #"weightsRate"
-savepath = f"/data/adam/{simLabel}"
+simLabel = "cellFit6" #"weightsRate"
+savepath = f"/tera/adam/data/{simLabel}"
 conn = connect(f'{savepath}/{simLabel}_storage.db')
 maxFitness = 1_000_000
 
@@ -36,10 +36,10 @@ def batch_params():
     params["inhWeightScale"] = [0.1, 10]
     params["gnabar"] = [1e-4, 1e-2]
     params["gkbar"] = [1e-4, 1e-2]
-    #params["ukcc2"] = [1e-6, 1]
-    #params["unkcc1"] = [1e-6, 1]
-    #params["pmax"] = [1e-6, 100]
-    #params["gpas"] = [0, 0.0001]
+    params["ukcc2"] = [1e-6, 1]
+    params["unkcc1"] = [1e-6, 1]
+    params["pmax"] = [1e-6, 100]
+    params["gpas"] = [0, 0.0001]
     return params
 
 
@@ -79,6 +79,7 @@ def fitnessFunc(sd, **kwargs):
         freqscore = 1.0
         rheobaseScore = 1.0
     rxdscore, o2score = 0, 0
+    vmin = 0
     for gid, _ in enumerate(amps):
         for ion in ["k", "na", "cl"]:
             trace = sd[f"{ion}i_soma"][f"cell_{gid}"]
@@ -86,35 +87,40 @@ def fitnessFunc(sd, **kwargs):
             o2score += sd["o2_consumedo_soma"][f"cell_{gid}"][
                 -1
             ]  # amount of oxygen consumed
-    return freqscore, rheobaseScore, rxdscore, o2score
+        if len(sd['v_soma'][f"cell_{gid}"])>0:
+            vmin = min(vmin, min(sd['v_soma'][f"cell_{gid}"]))
+    return freqscore, rheobaseScore, rxdscore, o2score, vmin
 
 
 
-freqscores, rheobaseScores, rxdscores, o2scores = [], [], [], [] 
+freqscores, rheobaseScores, rxdscores, o2scores, vmins = [], [], [], [], []
 for num in df['number']:
     try:
+        print(f"{savepath}/gen_{num}/trial_{num}_data.json")
         data = json.load(open(f"{savepath}/gen_{num}/trial_{num}_data.json","r"))
     except FileNotFoundError:
         freqscores.append(maxFitness)
         rheobaseScores.append(maxFitness)
         rxdscores.append(maxFitness)
         o2scores.append(maxFitness)
+        vmins.append(0)
         continue
     sd = data['simData']
-    f, r, rx, ox = fitnessFunc(sd)
+    f, r, rx, ox, v = fitnessFunc(sd)
     freqscores.append(f)
     rheobaseScores.append(r)
     rxdscores.append(rx)
     o2scores.append(ox)
+    vmins.append(v)
 df['freqScore'] = freqscores
 df['rheobaseScore'] = rheobaseScores
 df['rxdscore'] = rxdscores
 df['o2score'] = o2scores
-
+df['vmin'] = vmins
 
 # filter for reasonable (spiking) results
 df = df[df['trial_value']<2].sort_values('trial_value')
-idx = df['rxdscore'].argin()
+idx = df['rxdscore'].argmin()
 
 # print cfg (and results)
 for k,v in df.iloc[idx].items():

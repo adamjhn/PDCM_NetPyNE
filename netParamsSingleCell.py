@@ -53,6 +53,7 @@ netParams.amps = amps
 # Populations parameters
 ############################################################
 
+netParams.defaultThreshold = 30 # higher value for optimization of single cell model.
 # population locations
 # from Schmidt et al 2018, PLoS Comp Bio, Macaque V1
 netParams.sizeX = 100  # x-dimension (horizontal length) size in um

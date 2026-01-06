@@ -285,21 +285,6 @@ for i in range(0, 8):
             }
         all_cells.append(f"{L[i]}_{idx}")
 
-netParams.synMechParams["exc"] = {
-    "mod": "Exp2Syn",
-    "tau1": 0.8,
-    "tau2": 5.3,
-    "e": 0,
-}  # NMDA synaptic mechanism
-netParams.synMechParams["inh"] = {
-    "mod": "Exp2Syn",
-    "tau1": 0.6,
-    "tau2": 8.5,
-    "e": -75,
-}  # GABA synaptic mechanism
-
-
-
 ############################################################
 # Connectivity parameters
 ############################################################
@@ -338,7 +323,7 @@ for pop, sz in zip(L, N_Full):
                 inputs, weights = filterTimes(inp[inh], wei[inh])
                 weightScale = cfg.excWeight * cfg.inhWeightScale
             # create a source from the pre-recorded spikes
-            netParams.popParams[f"{pop}_{idx}_{syn}"] = {
+            netParams.popParams[f"vec_{pop}_{idx}_{syn}"] = {
                 "cellModel": "VecStim",
                 "type": "VecStim",
                 "spkTimes": inputs,
@@ -347,14 +332,13 @@ for pop, sz in zip(L, N_Full):
             }
             # play the source into the target cell
             netParams.connParams[f"conn_{pop}_{idx}_{syn}"] = {
-                "preConds": {"pop": f"{pop}_{idx}_{syn}"},
+                "preConds": {"pop": f"vec_{pop}_{idx}_{syn}"},
                 "postConds": {"pop": f"{pop}_{idx}"},
                 'probability': 1.0,
                 "weight": weightScale,  # synaptic weight
                 "delay": 1,
                 "synMech": syn,
             }
-
 
 ############################################################
 # RxD params

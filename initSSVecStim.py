@@ -9,7 +9,8 @@ from neuron import h, rxd
 import pandas as pd
 import numpy as np
 import pickle
-
+import sys
+import traceback
 ############################################################
 #               Create network and run simulation
 ############################################################
@@ -36,74 +37,83 @@ def fi(cells):
                 * seg.taur_cadad
             )
 
+try:
+    simConfig, netParams = sim.readCmdLineArgs(
+        simConfigDefault="cfgSS.py", netParamsDefault="netParamsSSVecStim.py"
+    )
+    sim.initialize(
+        simConfig=simConfig, netParams=netParams
+    )  # create network object and set cfg and net params
+    sim.net.createPops()  # instantiate network populations
+    sim.net.createCells()  # instantiate network cells based on defined populations
+    sim.net.addStims()  # add network stimulation
+    # fih = h.FInitializeHandler(2, lambda: fi(sim.net.cells))
+    sim.net.addRxD(nthreads=6)
+    
+    clamps = []
+    for cell in sim.net.cells:
+        if cell.tags['cellModel'] != "VecStim" and cell.tags['cellModel'] != "NetStim":
+            vclamp = h.VClamp(cell.secs['soma']['hObj'](0.5))
+            vclamp.dur[0] = 25
+            vclamp.dur[1] = 0
+            vclamp.dur[2] = 0
+            vclamp.amp[0] = -70
+            clamps.append(vclamp)
+    
+    
+    """
+    df = pd.read_json('PDMCExample.json')
+    
+    L = list(df.columns)
+    N_Full = np.array([len(df[pop]['cellGids']) for pop in L])
+    counts = {pop:0 for pop in L}
+    for gid in range(N_Full).sum()):
+        cell = sim.cellByGid(gid)
+        pop = cell.tags['cellType']
+        idx = counts[pop]
+        counts[pop] += 1
+        inp = df[pop]['inputs'][idx]
+        typ = df[pop]['mech'][idx]
+        excVec = h.Vector([t for t,m in zip(inp,typ) if typ == 'exc'])
+        inhVec = h.Vector([t for t,m in zip(inp,typ) if typ == 'inh'])
+    """
+    sim.net.connectCells()  # create connections between cells based on params
+    sim.setupRecording()  # setup variables to record for each cell (spikes, V traces, etc)
+    
+    # extra recording
+    """
+    for sp in rxd.species._all_defined_species:
+        if sp().name == 'mgate':
+            mgate = sp()
+        elif sp().name == 'hgate':
+            hgate = sp()
+        elif sp().name == 'ngate':
+            ngate = sp()
+    extraRec = {}
+    for cellName in sim.cfg.recordCells:
+        dat = {}
+        cell = sim.getCellsList(include=[cellName])[0]
+        dat['mgate'] = h.Vector().record(mgate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
+        dat['hgate'] = h.Vector().record(hgate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
+        dat['ngate'] = h.Vector().record(ngate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
+        extraRec[cellName] = dat
+    """ 
+    
+    sim.runSim()  # run parallel Neuron simulation
+    sim.gatherData()  # gather spiking data and cell info from each node
+    sim.saveData()  # save params, cell info and sim output to file (pickle,mat,txt,etc)#
 
-simConfig, netParams = sim.readCmdLineArgs(
-    simConfigDefault="cfgSS.py", netParamsDefault="netParamsSSVecStim.py"
-)
-sim.initialize(
-    simConfig=simConfig, netParams=netParams
-)  # create network object and set cfg and net params
-sim.net.createPops()  # instantiate network populations
-sim.net.createCells()  # instantiate network cells based on defined populations
-sim.net.addStims()  # add network stimulation
-# fih = h.FInitializeHandler(2, lambda: fi(sim.net.cells))
-sim.net.addRxD(nthreads=6)
-
-clamps = []
-for cell in sim.net.cells:
-    if cell.tags['cellModel'] != "VecStim":
-        vclamp = h.VClamp(cell.secs['soma']['hObj'](0.5))
-        vclamp.dur[0] = 25
-        vclamp.dur[1] = 0
-        vclamp.dur[2] = 0
-        vclamp.amp[0] = -70
-        clamps.append(vclamp)
+except Exception:
+    print("Exception occurred!")
+    traceback.print_exc()
+finally:
+    print("Error! Calling h.quit()")
+    h.quit()
 
 
-"""
-df = pd.read_json('PDMCExample.json')
-
-L = list(df.columns)
-N_Full = np.array([len(df[pop]['cellGids']) for pop in L])
-counts = {pop:0 for pop in L}
-for gid in range(N_Full).sum()):
-    cell = sim.cellByGid(gid)
-    pop = cell.tags['cellType']
-    idx = counts[pop]
-    counts[pop] += 1
-    inp = df[pop]['inputs'][idx]
-    typ = df[pop]['mech'][idx]
-    excVec = h.Vector([t for t,m in zip(inp,typ) if typ == 'exc'])
-    inhVec = h.Vector([t for t,m in zip(inp,typ) if typ == 'inh'])
-"""
-sim.net.connectCells()  # create connections between cells based on params
-sim.setupRecording()  # setup variables to record for each cell (spikes, V traces, etc)
-
-# extra recording
-"""
-for sp in rxd.species._all_defined_species:
-    if sp().name == 'mgate':
-        mgate = sp()
-    elif sp().name == 'hgate':
-        hgate = sp()
-    elif sp().name == 'ngate':
-        ngate = sp()
-extraRec = {}
-for cellName in sim.cfg.recordCells:
-    dat = {}
-    cell = sim.getCellsList(include=[cellName])[0]
-    dat['mgate'] = h.Vector().record(mgate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
-    dat['hgate'] = h.Vector().record(hgate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
-    dat['ngate'] = h.Vector().record(ngate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
-    extraRec[cellName] = dat
-""" 
-
-sim.runSim()  # run parallel Neuron simulation
-sim.gatherData()  # gather spiking data and cell info from each node
-sim.saveData()  # save params, cell info and sim output to file (pickle,mat,txt,etc)#
 # sim.analysis.plotData()               # plot spike raster etc
 
-pickle.dump(extraRec, open(f"{sim.cfg.saveFolder}/extraRec.pkl",'wb'))
+#pickle.dump(extraRec, open(f"{sim.cfg.saveFolder}/extraRec.pkl",'wb'))
 
 # # Plot all electrodes separately; use electrode 6
 # for elec in [3]: #range(15):

@@ -23,14 +23,14 @@ cfg = specs.SimConfig()  # object of class SimConfig to store simulation configu
 ############################################################
 
 cfg.seeds["stim"] = 3
-cfg.duration = 1e3  # Duration of the simulation, in ms
+cfg.duration = 1000  # Duration of the simulation, in ms
 cfg.dt = 0.025  # Internal integration timestep to use
 cfg.verbose = False  # Show detailed messages
 cfg.seeds["m"] = 123
 cfg.printPopAvgRates = False
 cfg.hParams["celsius"] = 34
 cfg.hParams["v_init"] = -70
-cfg.cvode_active = True
+cfg.cvode_active = False 
 # scaling factors
 cfg.poissonRateFactor = 1.0
 cfg.connected = True
@@ -45,12 +45,12 @@ cfg.scaleConnWeightNetStims = 1
 cfg.scaleConnWeightNetStimStd = 1
 
 # set the following 3 options to False when running large-scale versions of the model (>50% scale) to save memory
-cfg.saveCellSecs = False
+cfg.saveCellSecs = True 
 cfg.saveCellConns = True
-cfg.createPyStruct = False
+cfg.createPyStruct = True
 cfg.printPopAvgRates = True
 cfg.singleCells = False  # create one cell in each population
-cfg.printRunTime = 1
+cfg.printRunTime = False 
 cfg.Kceil = 15.0
 cfg.nRec = 25
 cfg.cellPops = [
@@ -85,6 +85,13 @@ cfg.recordTraces = {
     f"{var}_soma": {"sec": "soma", "loc": 0.5, "var": var}
     for var in ["v", "nai", "ki", "cli", "o2_consumedo"]
 }
+"""
+cfg.recordTraces["exc_i"] = {"sec":'soma', "loc":0.5, "synMech":"exc", "var":"i", 'index':0}
+cfg.recordTraces["inh_i"] = {"sec":'soma', "loc":0.5, "synMech":"inh", "var":"i", 'index':0}
+cfg.recordTraces["exc_g"] = {"sec":'soma', "loc":0.5, "synMech":"exc", "var":"g", 'index':0}
+cfg.recordTraces["inh_g"] = {"sec":'soma', "loc":0.5, "synMech":"inh", "var":"g", 'index':0}
+"""
+
 cfg.seed = 0
 cfg.seeds = {
     "conn": 2 + cfg.seed,
@@ -130,18 +137,30 @@ cfg.k0 = 3.5
 cfg.r0 = 100.0
 
 
-# Scale synapses weights
-cfg.excWeight = 1e-3 
-cfg.inhWeightScale = 3
+# Scale synapses weights -- optimized
+cfg.excWeight = 0.01 #0.9170195634091205
+cfg.inhWeightScale = 10#9.826449573438962
+
+
 cfg.weightMin = 0.1
 cfg.dWeight = 0.1
 # optimized single cell parameters
+"""
 cfg.gnabar = 0.014082188864974863
 cfg.gkbar = 0.04388527317642928
 cfg.ukcc2 = 0.004736215246958123
 cfg.unkcc1 = 3.5023769046490805
 cfg.pmax = 3.062009769812637
 cfg.gpas = 3.569925879901752e-07
+"""
+
+# optimized with AP peak >= 30mV
+cfg.gnabar = 0.02317782980588687
+cfg.gkbar = 0.0031339697023114225
+cfg.ukcc2 = 0.3346012597431861
+cfg.unkcc1 = 4.899481671772671
+cfg.pmax = 12.639480329923114
+cfg.gpas = 1.549147226145847e-05
 
 cfg.gkleak_scale = 1
 cfg.KKo = 5.3
