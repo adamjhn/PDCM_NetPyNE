@@ -12,19 +12,13 @@ import pandas as pd
 target = pd.read_csv('PDNetStats.csv').set_index('population')
 
 
-gnabar = 0.02317782980588687
-gkbar = 0.0031339697023114225
-ukcc2 = 0.3346012597431861
-unkcc1 = 4.899481671772671
-pmax = 12.639480329923114
-gpas = 1.549147226145847e-05
 
-gnabar_std = 0.0017390892016704372
-gkbar_std = 0.0003564545454721729
-ukcc2_std = 0.11428883187274348
-unkcc1_std = 0.828264324947491
-pmax_std = 9.536325789745575
-gpas_std = 9.422548050595615e-06
+gnabar, gnabar_std = 0.01634380634259234, 0.0018106704132224822
+gkbar, gkbar_std   = 0.004072149733395271, 0.000782462341227839
+ukcc2, ukcc2_std   = 0.006857333146853278, 0.01875010346518103
+unkcc1, unkcc1_std = 3.7972154462595427, 0.9342999693026236
+pmax, pmax_std     = 3864.502921361054, 904.3628326522638
+gpas, gpas_std     = 5.040306778620869e-05, 6.584489752366034e-06
 
 def batch():
     # parameters space to explore
@@ -133,12 +127,12 @@ def batch():
 	'allocation': 'default',
 	'email': 'adam.newton@neurosim.downstate.edu',
 	'reservation': None,
-	'folder': '/u/adam/models/PDCM_NetPyNE',
-	'custom': '. "/usr/site/nrniv/local/python/anaconda3/etc/profile.d/conda.sh"\nconda activate py311'
+	'folder': '/ddn/adamjhn/models/PDCM_NetPyNE',
+	#'custom': '. "/usr/site/nrniv/local/python/anaconda3/etc/profile.d/conda.sh"\nconda activate py311'
     #'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
-    b.batchLabel = "weightsRate6"
-    b.saveFolder = "/tera/adam/data/" + b.batchLabel
+    b.batchLabel = "newPumpRate"
+    b.saveFolder = "/ddn/adamjhn/data/" + b.batchLabel
 
     b.optimCfg = {
         "fitnessFunc": fitnessFunc,  # fitness expression (should read simData)
