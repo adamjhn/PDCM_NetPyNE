@@ -13,25 +13,25 @@ target = pd.read_csv('PDNetStats.csv').set_index('population')
 
 
 
-gnabar, gnabar_std = 0.01634380634259234, 0.0018106704132224822
-gkbar, gkbar_std   = 0.004072149733395271, 0.000782462341227839
-ukcc2, ukcc2_std   = 0.006857333146853278, 0.01875010346518103
-unkcc1, unkcc1_std = 3.7972154462595427, 0.9342999693026236
-pmax, pmax_std     = 3864.502921361054, 904.3628326522638
-gpas, gpas_std     = 5.040306778620869e-05, 6.584489752366034e-06
+# based on single cell trial score < 0.8
+gnabar_min, gnabar_max  = 0.01547763659212695, 0.02738686098712858
+gkbar_min, gkbar_max    = 0.0072252186353545245, 0.008395290224535777
+ukcc2_min, ukcc2_max    = 2.3089414835652383e-05, 0.009995406620321882
+unkcc1_min, unkcc1_max  = 1.962743799042841, 2.921144717441156
+pmax_min, pmax_max      = 4918.458877405473, 9187.687128667996
+gpas_min, gpas_max      = 3.1237344597190856e-05, 6.28561987682117e-05
 
 def batch():
     # parameters space to explore
     params = specs.ODict()
-    params["excWeight"] = [0, 5]
-    params["inhWeightScale"] = [0.1, 5]
-    params["gnabar"] = [gnabar - gnabar_std, gnabar + gnabar_std]
-    params["gkbar"] = [gkbar - gkbar_std, gkbar + gkbar_std]
-    params["ukcc2"] = [ukcc2 - ukcc2_std, ukcc2 + ukcc2_std]
-    params["unkcc1"] = [unkcc1 - unkcc1_std, unkcc1 + unkcc1_std]
-    params["pmax"] = [pmax - pmax_std, pmax + pmax_std]
-    params["gpas"] = [gpas - gpas_std, gpas + gpas_std]
-
+    params["excWeight"] = [0, 0.5]
+    params["inhWeightScale"] = [1, 5]
+    params["gnabar"] = [gnabar_min, gnabar_max]
+    params["gkbar"] = [gkbar_min, gkbar_max]
+    params["ukcc2"] = [ukcc2_min, ukcc2_max]
+    params["unkcc1"] = [unkcc1_min, unkcc1_max]
+    params["pmax"] = [pmax_min, pmax_max]
+    params["gpas"] = [gpas_min, gpas_max]
 
     # fitness function
     fitnessFuncArgs = {}

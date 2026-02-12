@@ -115,7 +115,7 @@ cfg.alpha_ecs = 0.2
 cfg.tort_ecs = 1.6
 cfg.o2drive = 0.013
 cfg.ox = "perfused"
-cfg.ATPss = 9.8 #2.59 # mM
+cfg.ATPss = 3.18 #mM PMC3524514 -- whole brain
 cfg.ATPDc = 0.445 #um**2/ms
 cfg.Ko2 = 0.3e-3 #mM  # Km for O2 at cytochrome c oxidase
 cfg.KmADP_synthase = 0.025  # mM, from PMC3833997 (human skeletal muscle)
@@ -131,10 +131,9 @@ cfg.ATPase_basal_density = 0.05 # mM/ms
 # At equilibrium: Keq = [ATP][AMP]/[ADP]^2 ≈ 1 (typical for adenylate kinase)
 # Solving: AMP = Keq * ADP^2 / ATP = 1.0 * (0.05)^2 / 2.59 ≈ 0.001 mM
 # Solving adenylateKinase rate_f == rate_b at steady-state gives exact value.
-cfg.AMPss = 0.0679046491139138  # mM, from adenylate kinase equilibrium with ADPss and ATPss
+cfg.AMPss = 0.0692795435459248 # mM, from adenylate kinase equilibrium with ADPss and ATPss
 cfg.Mg = 0.5 #mM (free Mg) https://doi.org/10.3390/ijms20143439
-cfg.vADK = 10
-cfg.KmADK = 10
+
 
 cfg.sa2v = 3.4  # False
 
