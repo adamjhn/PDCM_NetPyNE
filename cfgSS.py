@@ -173,13 +173,13 @@ cfg.pmax = 3.062009769812637
 cfg.gpas = 3.569925879901752e-07
 """
 
-# optimized with AP peak >= 30mV
-cfg.gnabar = 0.014185980939300428
-cfg.gkbar = 0.0048974986356033244
-cfg.ukcc2 = 0.0033512667503341085
-cfg.unkcc1 = 3.8996990897252264
-cfg.pmax = 4420.501167921591
-cfg.gpas = 4.630470827457373e-05
+# single cell optimized with AP peak >= 30mV
+cfg.gnabar = 0.0160634952368275
+cfg.gkbar = 0.007161485705717783
+cfg.ukcc2 = 5.1540662845422306e-05
+cfg.unkcc1 = 0.7234492401755943
+cfg.pmax = 8794.96374744003
+cfg.gpas = 3.326016479565267e-05
 
 
 cfg.gkleak_scale = 1
