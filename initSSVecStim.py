@@ -37,6 +37,33 @@ def fi(cells):
                 * seg.taur_cadad
             )
 
+depolarized = []
+twice_depolarized = []
+def runFunc(t):
+    global depolarized, twice_depolarized
+
+    # give up after 100 ms if no APs
+    if len(sim.simData["spkid"]) == 0:
+        print("No spikes detected after 100 ms, stopping simulation.")
+        h.t = sim.cfg.duration
+
+    # give up after >= 300ms if a cell is >-10 mV for 3 time checks in a row
+    for cell in sim.net.cells:
+        if cell.tags['cellModel'] != "VecStim" and cell.tags['cellModel'] != "NetStim":
+            if cell.secs['soma']['hObj'].v > -10:
+                if cell.gid not in depolarized:
+                    depolarized.append(cell.gid)
+                elif cell.gid not in twice_depolarized:
+                    twice_depolarized.append(cell.gid)
+                else:
+                    print(f"Cell {cell.gid} is depolarized above -10 mV for an extended period, stopping simulation.")
+                    h.t = sim.cfg.duration
+            else:
+                if cell.gid in depolarized:
+                    depolarized.remove(cell.gid)
+                if cell.gid in twice_depolarized:
+                    twice_depolarized.remove(cell.gid)
+
 try:
     simConfig, netParams = sim.readCmdLineArgs(
         simConfigDefault="cfgSS.py", netParamsDefault="netParamsSSVecStim.py"
@@ -98,8 +125,8 @@ try:
         dat['ngate'] = h.Vector().record(ngate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
         extraRec[cellName] = dat
     """ 
-    
-    sim.runSim()  # run parallel Neuron simulation
+    sim.runSimWithIntervalFunc(100, runFunc)
+
     sim.gatherData()  # gather spiking data and cell info from each node
     sim.saveData()  # save params, cell info and sim output to file (pickle,mat,txt,etc)#
 
@@ -107,7 +134,7 @@ except Exception:
     print("Exception occurred!")
     traceback.print_exc()
 finally:
-    print("Error! Calling h.quit()")
+    print("Calling h.quit()")
     h.quit()
 
 

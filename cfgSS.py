@@ -164,22 +164,15 @@ cfg.inhWeightScale = 10#9.826449573438962
 cfg.weightMin = 0.1
 cfg.dWeight = 0.1
 # optimized single cell parameters
-"""
-cfg.gnabar = 0.014082188864974863
-cfg.gkbar = 0.04388527317642928
-cfg.ukcc2 = 0.004736215246958123
-cfg.unkcc1 = 3.5023769046490805
-cfg.pmax = 3.062009769812637
-cfg.gpas = 3.569925879901752e-07
-"""
 
 # single cell optimized with AP peak >= 30mV
-cfg.gnabar = 0.0160634952368275
-cfg.gkbar = 0.007161485705717783
-cfg.ukcc2 = 5.1540662845422306e-05
-cfg.unkcc1 = 0.7234492401755943
-cfg.pmax = 8794.96374744003
-cfg.gpas = 3.326016479565267e-05
+cfg.gnabar = 0.02211617598652266
+cfg.gkbar = 0.004001629507118593
+cfg.ukcc2 = 0.0019830617654271222
+cfg.unkcc1 = 6.506198176269446
+cfg.pmax = 5035.941975532757
+cfg.gpas = 4.2407540290597475e-05
+
 
 
 cfg.gkleak_scale = 1
