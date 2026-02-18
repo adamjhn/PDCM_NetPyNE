@@ -158,17 +158,17 @@ def batch(phase=1):
     else:
         # Phase 2: refine weights + allow biophysical params to vary slightly
         # Update weight ranges from phase 1 best result
-        params["excWeight_L2"] = [0.001, 0.1]
-        params["excWeight_L4"] = [0.001, 0.1]
-        params["excWeight_L5"] = [0.001, 0.1]
-        params["excWeight_L6"] = [0.001, 0.1]
-        params["inhWeightScale_L2"] = [1, 20]
-        params["inhWeightScale_L4"] = [1, 20]
-        params["inhWeightScale_L5"] = [1, 20]
-        params["inhWeightScale_L6"] = [1, 20]
+        params["excWeight_L2"] = [0.00337102825909325, 0.09970573247166578]
+        params["excWeight_L4"] = [0.0015478278243650744, 0.09224432415201037]
+        params["excWeight_L5"] = [0.020527366825059155, 0.09591731501646707]
+        params["excWeight_L6"] = [0.0053599045750208855, 0.08939825948159345]
+        params["inhWeightScale_L2"] = [1.2360320160153238, 19.823859998076514]
+        params["inhWeightScale_L4"] = [4.100961305136707, 17.718480016210854]
+        params["inhWeightScale_L5"] = [2.249033414447468, 18.983260941728414]
+        params["inhWeightScale_L6"] = [1.2814160728066626, 19.564217782340194]
         # Allow small biophysical adjustments around single cell optimum
-        params["pmax"] = [5000, 5500]
-        params["gnabar"] = [0.020, 0.025]
+        #params["pmax"] = [5000, 5500]
+        #params["gnabar"] = [0.020, 0.025]
         label = "phase2_refine"
 
     fitnessFuncArgs = {"maxFitness": 1_000_000_000_000}
