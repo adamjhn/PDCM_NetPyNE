@@ -314,13 +314,16 @@ for pop, sz in zip(L, N_Full):
         exc = wei >= 0
         inh = wei < 0
         # sum inputs less than 10^-12s apart
+        layer = pop[:2]  # e.g. "L2" from "L2e"
         for syn in ["exc", "inh"]:
             if syn == "exc":
                 inputs, weights = filterTimes(inp[exc], wei[exc])
-                weightScale = cfg.excWeight
+                weightScale = getattr(cfg, f"excWeight_{layer}", cfg.excWeight)
             else:
                 inputs, weights = filterTimes(inp[inh], wei[inh])
-                weightScale = cfg.excWeight * cfg.inhWeightScale
+                excW = getattr(cfg, f"excWeight_{layer}", cfg.excWeight)
+                inhS = getattr(cfg, f"inhWeightScale_{layer}", cfg.inhWeightScale)
+                weightScale = excW * inhS
             # create a source from the pre-recorded spikes
             netParams.popParams[f"vec_{pop}_{idx}_{syn}"] = {
                 "cellModel": "VecStim",
