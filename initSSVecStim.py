@@ -42,8 +42,8 @@ twice_depolarized = []
 def runFunc(t):
     global depolarized, twice_depolarized
 
-    # give up after 100 ms if no APs
-    if len(sim.simData["spkid"]) == 0:
+    # give up after 200 ms if no APs
+    if t>=200 and len(sim.simData["spkid"]) == 0:
         print("No spikes detected after 100 ms, stopping simulation.")
         h.t = sim.cfg.duration
 
@@ -75,7 +75,7 @@ try:
     sim.net.createCells()  # instantiate network cells based on defined populations
     sim.net.addStims()  # add network stimulation
     # fih = h.FInitializeHandler(2, lambda: fi(sim.net.cells))
-    sim.net.addRxD(nthreads=6)
+    sim.net.addRxD(nthreads=2)
     
     clamps = []
     for cell in sim.net.cells:

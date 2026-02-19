@@ -109,6 +109,9 @@ def fitnessFunc(sd, **kwargs):
     atp_score /= n_cells
     o2score /= n_cells
 
+    # Penalty for no spikes: ensures any spiking trial scores better
+    no_spike_penalty = 10.0 if len(spkid) == 0 else 0.0
+
     total = (
         rate_score              # ~0-1: population rates
         + irregularity_score    # ~0-1: ISI irregularity
@@ -119,13 +122,15 @@ def fitnessFunc(sd, **kwargs):
         + atp_score             # ~0-1: ATP homeostasis
         + o2score               # O2 consumption
         + vscore                # voltage floor penalty
+        + no_spike_penalty      # penalty for zero spikes
     )
 
     print(
         f"rate={rate_score:.3f} irr={irregularity_score:.3f} "
         f"sync={synchrony_score:.3f} spkcnt={spike_count_score:.3f} "
         f"vr={vr_score:.3f} rxd={rxdscore:.3f} atp={atp_score:.3f} "
-        f"o2={o2score:.3f} v={vscore:.3f} total={total:.3f}"
+        f"o2={o2score:.3f} v={vscore:.3f} nospk={no_spike_penalty:.0f} "
+        f"total={total:.3f}"
     )
     return min(kwargs["maxFitness"], total)
 
