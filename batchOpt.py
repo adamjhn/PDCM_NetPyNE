@@ -149,28 +149,18 @@ def batch(phase=1):
     params = specs.ODict()
 
     if phase == 1:
-        # Phase 1: per-layer synaptic weights only
+        # Phase 1: per-population synaptic weights
         # Biophysical params fixed at single cell optimum (set in cfgSS.py)
-        params["excWeight_L2"] = [0.001, 0.1]
-        params["excWeight_L4"] = [0.001, 0.1]
-        params["excWeight_L5"] = [0.001, 0.1]
-        params["excWeight_L6"] = [0.001, 0.1]
-        params["inhWeightScale_L2"] = [1, 20]
-        params["inhWeightScale_L4"] = [1, 20]
-        params["inhWeightScale_L5"] = [1, 20]
-        params["inhWeightScale_L6"] = [1, 20]
+        for pop in cfg.cellPops:
+            params[f"excWeight_{pop}"] = [0.001, 0.5]
+            params[f"inhWeightScale_{pop}"] = [1, 20]
         label = "phase1_weights"
     else:
         # Phase 2: refine weights + allow biophysical params to vary slightly
-        # Update weight ranges from phase 1 best result
-        params["excWeight_L2"] = [0.04420605306429825, 0.08879959892086117]
-        params["excWeight_L4"] = [0.028242295909460712, 0.041386219322368814]
-        params["excWeight_L5"] = [0.07049066839432674, 0.08814024609988351]
-        params["excWeight_L6"] = [0.008682519299554535, 0.08402181731993259]
-        params["inhWeightScale_L2"] = [6.970560715246265, 8.653813696790731]
-        params["inhWeightScale_L4"] = [6.62915480615777, 7.528088163875388]
-        params["inhWeightScale_L5"] = [5.112025438540922, 6.645367348148845]
-        params["inhWeightScale_L6"] = [3.647819624652403, 5.981485482168719]
+        # TODO: update ranges from phase 1 best result
+        for pop in cfg.cellPops:
+            params[f"excWeight_{pop}"] = [0.001, 0.5]
+            params[f"inhWeightScale_{pop}"] = [1, 20]
         # Allow small biophysical adjustments around single cell optimum
         params["pmax"] = [cfg.pmax*0.9, cfg.pmax*1.1]
         params["gnabar"] = [cfg.gnabar*0.9, cfg.gnabar*1.1]
