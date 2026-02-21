@@ -156,11 +156,24 @@ def batch(phase=1):
             params[f"inhWeightScale_{pop}"] = [1, 20]
         label = "phase1_weights"
     else:
-        # Phase 2: refine weights + allow biophysical params to vary slightly
-        # TODO: update ranges from phase 1 best result
-        for pop in cfg.cellPops:
-            params[f"excWeight_{pop}"] = [0.001, 0.5]
-            params[f"inhWeightScale_{pop}"] = [1, 20]
+        # Phase 2: narrowed from phase 1 top 20 + 20% margin
+        # inhWeightScale lower bound extended to 0.1 to allow inh < exc
+        params["excWeight_L2e"] = [0.001, 0.577]
+        params["excWeight_L2i"] = [0.101, 0.160]
+        params["excWeight_L4e"] = [0.171, 0.237]
+        params["excWeight_L4i"] = [0.018, 0.088]
+        params["excWeight_L5e"] = [0.001, 0.046]
+        params["excWeight_L5i"] = [0.123, 0.259]
+        params["excWeight_L6e"] = [0.202, 0.341]
+        params["excWeight_L6i"] = [0.109, 0.407]
+        params["inhWeightScale_L2e"] = [0.1, 17.64]
+        params["inhWeightScale_L2i"] = [2.18, 7.64]
+        params["inhWeightScale_L4e"] = [0.1, 3.36]
+        params["inhWeightScale_L4i"] = [5.32, 7.70]
+        params["inhWeightScale_L5e"] = [6.80, 9.01]
+        params["inhWeightScale_L5i"] = [0.1, 4.34]
+        params["inhWeightScale_L6e"] = [0.1, 3.97]
+        params["inhWeightScale_L6i"] = [1.62, 7.47]
         # Allow small biophysical adjustments around single cell optimum
         params["pmax"] = [cfg.pmax*0.9, cfg.pmax*1.1]
         params["gnabar"] = [cfg.gnabar*0.9, cfg.gnabar*1.1]
