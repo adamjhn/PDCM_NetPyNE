@@ -8,17 +8,16 @@ import numpy as np
 from cfgSS import cfg
 import pandas as pd
 
-
 # Paths
-HOMEDIR='/home/adam' #'/ddn/adamjhn'
-DATADIR='/home/adam/models/data' #'/ddn/adamjhn/data'
+HOMEDIR = "/home/adam"  #'/ddn/adamjhn'
+DATADIR = "/home/adam/models/data"  #'/ddn/adamjhn/data'
 
 # Original PD model stats
-target = pd.read_csv('PDNetStats.csv').set_index('population')
+target = pd.read_csv("PDNetStats.csv").set_index("population")
 n_pops = len(target)
 
 # Per-population target rates for normalization
-target_rates = target['rates'].values
+target_rates = target["rates"].values
 max_target_rate = max(target_rates.max(), 1.0)
 
 
@@ -32,13 +31,13 @@ def fitnessFunc(sd, **kwargs):
 
     # Rate score: normalized so each population contributes ~0-1
     rate_score = 0
-    for rt, rs in zip(target['rates'], stats['rates'].values()):
+    for rt, rs in zip(target["rates"], stats["rates"].values()):
         rate_score += abs(rt - rs) / max(rt, 0.1)
     rate_score /= n_pops  # ~0-1 if rates are within a factor of 2
 
     # Irregularity score: CV of ISI, target ~0.8-0.9
     irregularity_score = 0
-    for cvt, cvs in zip(target['irregularity'], stats['irregularity'].values()):
+    for cvt, cvs in zip(target["irregularity"], stats["irregularity"].values()):
         if np.isnan(cvs):
             irregularity_score += 1.0
         else:
@@ -47,7 +46,7 @@ def fitnessFunc(sd, **kwargs):
 
     # Synchrony score: Fano factor of population spike counts
     synchrony_score = 0
-    for st, ss in zip(target['synchrony'], stats['synchrony'].values()):
+    for st, ss in zip(target["synchrony"], stats["synchrony"].values()):
         diff = abs(st - ss)
         synchrony_score += min(diff / max(st, 0.1), 2.0) if not np.isnan(diff) else 1.0
     synchrony_score /= n_pops
@@ -67,8 +66,11 @@ def fitnessFunc(sd, **kwargs):
     vr_score, spike_count_score = 0, 0
     rxdscore, atp_score, o2score = 0, 0, 0
     vscore = 0
+    zeroAP = {}
     for gid, cell in enumerate(cell_list):
         pop, idx = cell.split("_")
+        if pop not in zeroAP:
+            zeroAP[pop] = True
         idx = int(idx)
 
         out = spkt[spkid == gid]
@@ -77,6 +79,8 @@ def fitnessFunc(sd, **kwargs):
         # Spike count difference (normalized per cell)
         n_exp = max(len(exp), 1)
         spike_count_score += abs(len(exp) - len(out)) / n_exp
+        if len(out) > 0:
+            zeroAP[pop] = False
 
         # Van Rossum distance
         vr_score += dist(out, exp, 2.0)
@@ -105,24 +109,27 @@ def fitnessFunc(sd, **kwargs):
     # Normalize per-cell scores
     spike_count_score /= n_cells
     vr_score /= n_cells
-    rxdscore /= (n_cells * 3)
+    rxdscore /= n_cells * 3
     atp_score /= n_cells
     o2score /= n_cells
 
     # Penalty for no spikes: ensures any spiking trial scores better
     no_spike_penalty = 10.0 if len(spkid) == 0 else 0.0
+    # Additional penalty of 1/8 for each quite population
+    no_spike_pop_penalty = sum([x / len(zeroAP) for x in zeroAP.values()])
 
     total = (
-        rate_score              # ~0-1: population rates
-        + irregularity_score    # ~0-1: ISI irregularity
-        + synchrony_score       # ~0-1: synchrony
-        + spike_count_score     # ~0-1: per-cell spike count
-        + vr_score              # van Rossum distance (unbounded but typically small)
-        + rxdscore              # ~0-1: ion homeostasis
-        + atp_score             # ~0-1: ATP homeostasis
-        + o2score               # O2 consumption
-        + vscore                # voltage floor penalty
-        + no_spike_penalty      # penalty for zero spikes
+        rate_score  # ~0-1: population rates
+        + irregularity_score  # ~0-1: ISI irregularity
+        + synchrony_score  # ~0-1: synchrony
+        + spike_count_score  # ~0-1: per-cell spike count
+        + vr_score  # van Rossum distance (unbounded but typically small)
+        + rxdscore  # ~0-1: ion homeostasis
+        + atp_score  # ~0-1: ATP homeostasis
+        + o2score  # O2 consumption
+        + vscore  # voltage floor penalty
+        + no_spike_penalty  # penalty for zero spikes
+        + no_spike_pop_penalty
     )
 
     print(
@@ -155,7 +162,7 @@ def batch(phase=1):
             params[f"excWeight_{pop}"] = [0.001, 0.5]
             params[f"inhWeightScale_{pop}"] = [1, 20]
         label = "phase1_weights"
-    else:
+    elif phase == 2:
         # Phase 2: narrowed from phase 1 top 20 + 20% margin
         # inhWeightScale lower bound extended to 0.1 to allow inh < exc
         params["excWeight_L2e"] = [0.001, 0.577]
@@ -175,14 +182,34 @@ def batch(phase=1):
         params["inhWeightScale_L6e"] = [0.1, 3.97]
         params["inhWeightScale_L6i"] = [1.62, 7.47]
         # Allow small biophysical adjustments around single cell optimum
-        params["pmax"] = [cfg.pmax*0.9, cfg.pmax*1.1]
-        params["gnabar"] = [cfg.gnabar*0.9, cfg.gnabar*1.1]
+        params["pmax"] = [cfg.pmax * 0.9, cfg.pmax * 1.1]
+        params["gnabar"] = [cfg.gnabar * 0.9, cfg.gnabar * 1.1]
         label = "phase2_refine"
+    else:
+        params[excWeight_L2e] = [0.072, 0.484]
+        params[excWeight_L2i] = [0.127, 0.136]
+        params[excWeight_L4e] = [0.174, 0.188]
+        params[excWeight_L4i] = [0.059, 0.070]
+        params[excWeight_L5e] = [0.016, 0.045]
+        params[excWeight_L5i] = [0.160, 0.201]
+        params[excWeight_L6e] = [0.243, 0.296]
+        params[excWeight_L6i] = [0.200, 0.260]
+        params[inhWeightScale_L2e] = [0.000, 17.153]
+        params[inhWeightScale_L2i] = [2.180, 2.847]
+        params[inhWeightScale_L4e] = [0.805, 1.191]
+        params[inhWeightScale_L4i] = [5.922, 6.459]
+        params[inhWeightScale_L5e] = [6.806, 7.849]
+        params[inhWeightScale_L5i] = [2.009, 3.965]
+        params[inhWeightScale_L6e] = [1.100, 1.402]
+        params[inhWeightScale_L6i] = [2.468, 5.211]
+        params[pmax] = [4536.282, 5204.591]
+        params[gnabar] = [0.021, 0.023]
+        label = "phase3_refine"
 
     fitnessFuncArgs = {"maxFitness": 1_000_000_000_000}
     fitnessFuncArgs["data"] = (
         pickle.load(open("sample_pd_scale-0.16_DC-0_TH-1_Balanced-1_dur-1.pkl", "rb")),
-        json.load(open('batchOptNet.json'))
+        json.load(open("batchOptNet.json")),
     )
 
     # create Batch object with parameters to modify, and specifying files to use
@@ -191,17 +218,17 @@ def batch(phase=1):
     # Set output folder, grid method (all param combinations), and run configuration
     b.method = "optuna"
     b.runCfg = {
-        'type': 'mpi_direct',
-        'script': 'initSSVecStim.py',
+        "type": "mpi_direct",
+        "script": "initSSVecStim.py",
         # options required only for hpc
-        'mpiCommand': '',
-        'executor': '/bin/bash',
-        'nodes': 1,
-        'coresPerNode': 1,
-        'allocation': 'default',
-        'email': 'adam.newton@neurosim.downstate.edu',
-        'reservation': None,
-        'folder': f'{HOMEDIR}/models/PDCM_NetPyNE',
+        "mpiCommand": "",
+        "executor": "/bin/bash",
+        "nodes": 1,
+        "coresPerNode": 1,
+        "allocation": "default",
+        "email": "adam.newton@neurosim.downstate.edu",
+        "reservation": None,
+        "folder": f"{HOMEDIR}/models/PDCM_NetPyNE",
         #'custom': '. "/usr/site/nrniv/local/python/anaconda3/etc/profile.d/conda.sh"\nconda activate py311'
     }
     b.batchLabel = label
@@ -224,5 +251,6 @@ def batch(phase=1):
 # Main code
 if __name__ == "__main__":
     import sys
+
     phase = int(sys.argv[1]) if len(sys.argv) > 1 else 1
     batch(phase=phase)
