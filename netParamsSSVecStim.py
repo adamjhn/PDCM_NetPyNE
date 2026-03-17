@@ -96,16 +96,14 @@ for pop in L:
 ## Synaptic mechanism parameters
 ############################################################
 netParams.synMechParams["exc"] = {
-    "mod": "Exp2Syn",
+    "mod": "AMPA",
     "tau1": 0.8,
     "tau2": 5.3,
-    "e": 0,
-}  # NMDA synaptic mechanism
+}  # AMPA synaptic mechanism
 netParams.synMechParams["inh"] = {
-    "mod": "Exp2Syn",
+    "mod": "GABA",
     "tau1": 0.6,
     "tau2": 8.5,
-    "e": -75,
 }  # GABA synaptic mechanism
 
 
