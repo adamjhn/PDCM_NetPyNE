@@ -3,8 +3,8 @@ from sqlite3 import connect
 import json
 import numpy as np
 
-simLabel = "cellFit6" #"weightsRate"
-savepath = f"/tera/adam/data/{simLabel}"
+simLabel = "phase2_homeostasis" #"phase1_channels" #"newPumpFit3" #"weightsRate"
+savepath = f"/home/adam/models/data/{simLabel}"
 conn = connect(f'{savepath}/{simLabel}_storage.db')
 maxFitness = 1_000_000
 
@@ -119,10 +119,10 @@ df['o2score'] = o2scores
 df['vmin'] = vmins
 
 # filter for reasonable (spiking) results
-df = df[df['trial_value']<2].sort_values('trial_value')
-idx = df['rxdscore'].argmin()
+#df = df[df['trial_value']<1].sort_values('trial_value')
+#idx = df['rxdscore'].argmin()
 
 # print cfg (and results)
-for k,v in df.iloc[idx].items():
-    print(f"cfg.{k} = {v}")
+#for k,v in df.iloc[idx].items():
+#    print(f"cfg.{k} = {v}")
 
