@@ -165,6 +165,24 @@ def batch(phase=1):
     elif phase == 2:
         # Phase 2: narrowed from phase 1 top 20 + 20% margin
         # inhWeightScale lower bound extended to 0.1 to allow inh < exc
+        params['excWeight_L2e'] = [0.0151, 0.0305]
+        params['excWeight_L4e'] = [0.0189, 0.0615]
+        params['excWeight_L5e'] = [0.0046, 0.0415]
+        params['excWeight_L6e'] = [0.0001, 1.0]
+        params['excWeight_L2i'] = [0.0120, 0.0491]
+        params['excWeight_L4i'] = [0.0106, 0.0354]
+        params['excWeight_L5i'] = [0.0124, 0.0614]
+        params['excWeight_L6i'] = [0.0215, 0.0677]
+        params['inhWeightScale_L2e'] = [16.2760, 18.9602]
+        params['inhWeightScale_L4e'] = [10.6938, 18.9861]
+        params['inhWeightScale_L5e'] = [9.4876, 16.3864]
+        params['inhWeightScale_L2i'] = [12.6409, 14.9574]
+        params['inhWeightScale_L4i'] = [10.2795, 17.9434]
+        params['inhWeightScale_L5i'] = [7.7068, 12.7006]
+        params['inhWeightScale_L6i'] = [8.3897, 13.7480]
+        params['inhWeightScale_L6e'] = [0, 20]
+        
+        """
         params["excWeight_L2e"] = [0.001, 0.577]
         params["excWeight_L2i"] = [0.101, 0.160]
         params["excWeight_L4e"] = [0.171, 0.237]
@@ -181,9 +199,10 @@ def batch(phase=1):
         params["inhWeightScale_L5i"] = [0.1, 4.34]
         params["inhWeightScale_L6e"] = [0.1, 3.97]
         params["inhWeightScale_L6i"] = [1.62, 7.47]
+        """
         # Allow small biophysical adjustments around single cell optimum
-        params["pmax"] = [cfg.pmax * 0.9, cfg.pmax * 1.1]
-        params["gnabar"] = [cfg.gnabar * 0.9, cfg.gnabar * 1.1]
+        params["pmax"] = [cfg.pmax * 0.75, cfg.pmax * 1.25]
+        params["gnabar"] = [cfg.gnabar * 0.75, cfg.gnabar * 1.25]
         label = "phase2_refine"
     else:
         params[excWeight_L2e] = [0.072, 0.484]
