@@ -165,23 +165,23 @@ def batch(phase=1):
     elif phase == 2:
         # Phase 2: narrowed from phase 1 top 20 + 20% margin
         # inhWeightScale lower bound extended to 0.1 to allow inh < exc
-        params['excWeight_L2e'] = [0.0151, 0.0305]
-        params['excWeight_L4e'] = [0.0189, 0.0615]
-        params['excWeight_L5e'] = [0.0046, 0.0415]
-        params['excWeight_L6e'] = [0.0001, 1.0]
-        params['excWeight_L2i'] = [0.0120, 0.0491]
-        params['excWeight_L4i'] = [0.0106, 0.0354]
-        params['excWeight_L5i'] = [0.0124, 0.0614]
-        params['excWeight_L6i'] = [0.0215, 0.0677]
-        params['inhWeightScale_L2e'] = [16.2760, 18.9602]
-        params['inhWeightScale_L4e'] = [10.6938, 18.9861]
-        params['inhWeightScale_L5e'] = [9.4876, 16.3864]
-        params['inhWeightScale_L2i'] = [12.6409, 14.9574]
-        params['inhWeightScale_L4i'] = [10.2795, 17.9434]
-        params['inhWeightScale_L5i'] = [7.7068, 12.7006]
-        params['inhWeightScale_L6i'] = [8.3897, 13.7480]
-        params['inhWeightScale_L6e'] = [0, 20]
-        
+        params["excWeight_L2e"] = [0.0151, 0.0305]
+        params["excWeight_L4e"] = [0.0189, 0.0615]
+        params["excWeight_L5e"] = [0.0046, 0.0415]
+        params["excWeight_L6e"] = [0.0001, 1.0]
+        params["excWeight_L2i"] = [0.0120, 0.0491]
+        params["excWeight_L4i"] = [0.0106, 0.0354]
+        params["excWeight_L5i"] = [0.0124, 0.0614]
+        params["excWeight_L6i"] = [0.0215, 0.0677]
+        params["inhWeightScale_L2e"] = [16.2760, 18.9602]
+        params["inhWeightScale_L4e"] = [10.6938, 18.9861]
+        params["inhWeightScale_L5e"] = [9.4876, 16.3864]
+        params["inhWeightScale_L2i"] = [12.6409, 14.9574]
+        params["inhWeightScale_L4i"] = [10.2795, 17.9434]
+        params["inhWeightScale_L5i"] = [7.7068, 12.7006]
+        params["inhWeightScale_L6i"] = [8.3897, 13.7480]
+        params["inhWeightScale_L6e"] = [0, 20]
+
         """
         params["excWeight_L2e"] = [0.001, 0.577]
         params["excWeight_L2i"] = [0.101, 0.160]
@@ -205,6 +205,7 @@ def batch(phase=1):
         params["gnabar"] = [cfg.gnabar * 0.75, cfg.gnabar * 1.25]
         label = "phase2_refine"
     else:
+        """
         params[excWeight_L2e] = [0.072, 0.484]
         params[excWeight_L2i] = [0.127, 0.136]
         params[excWeight_L4e] = [0.174, 0.188]
@@ -223,6 +224,26 @@ def batch(phase=1):
         params[inhWeightScale_L6i] = [2.468, 5.211]
         params[pmax] = [4536.282, 5204.591]
         params[gnabar] = [0.021, 0.023]
+        """
+        # increase range for under firing pops L6i
+        # other based on target rate +/- 10%
+        params["excWeight_L2i"] = [0.0160, 0.0380]
+        params["inhWeightScale_L2i"] = [13.5997, 14.7885]
+        params["excWeight_L4e"] = [0.0379, 0.0422]
+        params["inhWeightScale_L4e"] = [10.6943, 11.7066]
+        params["excWeight_L4i"] = [0.0114, 0.0243]
+        params["inhWeightScale_L4i"] = [10.3171, 14.4559]
+        params["excWeight_L5e"] = [0.0108, 0.0311]
+        params["inhWeightScale_L5e"] = [9.6984, 14.9389]
+        params["excWeight_L5i"] = [0.0201, 0.0533]
+        params["inhWeightScale_L5i"] = [7.7160, 11.5293]
+        params["excWeight_L6e"] = [0.0337, 0.2369]
+        params["inhWeightScale_L6e"] = [0.7447, 9.2492]
+        params["excWeight_L6i"] = [0.01, 1.0]
+        params["inhWeightScale_L6i"] = [0, 5]
+        params["pmax"] = [4537.7262, 5292.8469]
+        params["gnabar"] = [0.0217, 0.0262]
+
         label = "phase3_refine"
 
     fitnessFuncArgs = {"maxFitness": 1_000_000_000_000}
