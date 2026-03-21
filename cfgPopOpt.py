@@ -27,7 +27,7 @@ cfg.duration = 1000  # Duration of the simulation, in ms
 cfg.dt = 0.025  # Internal integration timestep to use
 cfg.verbose = False  # Show detailed messages
 cfg.seeds["m"] = 123
-cfg.optPop = 'L2e'
+cfg.popOpt = ['L2e']
 cfg.printPopAvgRates = False
 cfg.hParams["celsius"] = 34
 cfg.hParams["v_init"] = -70
@@ -66,7 +66,7 @@ cfg.cellPops = [
 ]  # record only spikes of cells (not ext stims)
 cfg.cellPopsInit = (-85, -60)
 cfg.recordCellsSpikes = [
-    f"L{i}{ei}_{idx}" for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
+    f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)
 ]
 
 if cfg.recordStim:
@@ -80,7 +80,7 @@ if cfg.recordStim:
 #]
 
 cfg.recordCells = [
-    f"L{i}{ei}_{idx}" for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
+    f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)
 ]
 cfg.recordTraces = {
     f"{var}_soma": {"sec": "soma", "loc": 0.5, "var": var}
