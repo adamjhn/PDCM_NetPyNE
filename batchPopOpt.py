@@ -25,19 +25,21 @@ def fitnessFunc(sd, **kwargs):
     """Network fitness with normalized and balanced scoring components."""
     print("calc fitness")
     data, net = kwargs["data"]
-    pops = kwargs['pops']
+    pops = kwargs["pops"]
     # --- Population statistics ---
     stats = networkStatsFromOpt(sd, net, duration=cfg.duration)
 
     # Rate score: normalized so each population contributes ~0-1
     rate_score = 0
-    for rt, rs in zip(target["rates"], stats["rates"].values()):
+    for pop, rs in stats["rates"].items():
+        rt = target.loc[pop]["rates"]
         rate_score += abs(rt - rs) / max(rt, 0.1)
     rate_score /= n_pops  # ~0-1 if rates are within a factor of 2
 
     # Irregularity score: CV of ISI, target ~0.8-0.9
     irregularity_score = 0
-    for cvt, cvs in zip(target["irregularity"], stats["irregularity"].values()):
+    for pop, cvs in stats["irregularity"].items():
+        cvt = target.loc[pop]["irregularity"]
         if np.isnan(cvs):
             irregularity_score += 1.0
         else:
@@ -46,7 +48,8 @@ def fitnessFunc(sd, **kwargs):
 
     # Synchrony score: Fano factor of population spike counts
     synchrony_score = 0
-    for st, ss in zip(target["synchrony"], stats["synchrony"].values()):
+    for pop, ss in stats["synchrony"].items():
+        st = target.loc[pop]["synchrony"]
         diff = abs(st - ss)
         synchrony_score += min(diff / max(st, 0.1), 2.0) if not np.isnan(diff) else 1.0
     synchrony_score /= n_pops
@@ -55,11 +58,7 @@ def fitnessFunc(sd, **kwargs):
     spkid = np.array(sd["spkid"])
     spkt = np.array(sd["spkt"]) - 2  # subtract 2ms added delay
 
-    cell_list = [
-        f"{pop}_{idx}"
-        for pop in pops
-        for idx in range(10)
-    ]
+    cell_list = [f"{pop}_{idx}" for pop in pops for idx in range(10)]
     n_cells = len(cell_list)
 
     vr_score, spike_count_score = 0, 0
@@ -245,11 +244,15 @@ def batch(phase=1, pops=None):
         label = "phase3_refine"
 
     fitnessFuncArgs = {"maxFitness": 1_000_000_000_000}
+    net = {}
+    for i, pop in enumerate(cfg.popOpt):
+        net[pop] = {"cellGids": [i for i in range(10 * i, 10 * (i + 1))]}
+
     fitnessFuncArgs["data"] = (
         pickle.load(open("sample_pd_scale-0.16_DC-0_TH-1_Balanced-1_dur-1.pkl", "rb")),
-        json.load(open("batchOptNet.json")),
+        net,
     )
-    fitnessFuncArgs['pops'] = cfg.popOpt 
+    fitnessFuncArgs["pops"] = cfg.popOpt
 
     # create Batch object with parameters to modify, and specifying files to use
     b = Batch(params=params, cfgFile="cfgPopOpt.py", netParamsFile="netParamsPopOpt.py")
