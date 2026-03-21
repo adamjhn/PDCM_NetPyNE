@@ -151,14 +151,31 @@ def batch(phase=1, pops=None):
         python batchOpt.py 1        # phase 1
         python batchOpt.py 2        # phase 2
     """
+    bcfg = {}
+    if pops is not None:
+        bcfg["popOpt"] = pops
+    else:
+        pops = cfg.popOpt
     params = specs.ODict()
     if phase == 1:
         # Phase 1: per-population synaptic weights
         # Biophysical params fixed at single cell optimum (set in cfgSS.py)
-        for pop in cfg.popOpt:
+        for pop in pops:
             params[f"excWeight_{pop}"] = [0.001, 0.5]
             params[f"inhWeightScale_{pop}"] = [1, 20]
-        label = "phase1_weights"
+    elif phase == 2:
+        # use the results from phase 1 for weights and modify other
+        # params
+        for pop in pops:
+            params[f"excWeight_{pop}"] = [0.001, 0.5]
+            params[f"inhWeightScale_{pop}"] = [1, 20]
+            params["gnabar"] = [0.75 * 0.01385, 1.25 * 0.02500]
+            params["gkbar"] = [0.75 * 0.00400, 1.25 * 0.00510]
+            params["ukcc2"] = [0.75 * 0.00100, 1.25 * 0.00975]
+            params["unkcc1"] = [0.75 * 2.05523, 1.25 * 5.99990]
+            params["pmax"] = [0.75 * 5000.01684, 1.25 * 7866.09050]
+            params["gpas"] = [0.75 * 0.00003, 1.25 * 0.00005]
+        label = "phase1_full"
     elif phase == 2:
         # Phase 2: narrowed from phase 1 top 20 + 20% margin
         # inhWeightScale lower bound extended to 0.1 to allow inh < exc
@@ -255,7 +272,12 @@ def batch(phase=1, pops=None):
     fitnessFuncArgs["pops"] = cfg.popOpt
 
     # create Batch object with parameters to modify, and specifying files to use
-    b = Batch(params=params, cfgFile="cfgPopOpt.py", netParamsFile="netParamsPopOpt.py")
+    b = Batch(
+        params=params,
+        cfgFile="cfgPopOpt.py",
+        netParamsFile="netParamsPopOpt.py",
+        initCfg=bcfg,
+    )
 
     # Set output folder, grid method (all param combinations), and run configuration
     b.method = "optuna"
@@ -295,4 +317,8 @@ if __name__ == "__main__":
     import sys
 
     phase = int(sys.argv[1]) if len(sys.argv) > 1 else 1
-    batch(phase=phase)
+    if len(sys.argv) > 2:
+        pops = [sys.argv[i] for i in range(2, len(sys.argv))]
+    else:
+        pops = None
+    batch(phase=phase, pops=pops)
