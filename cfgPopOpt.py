@@ -243,9 +243,9 @@ cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeightScale}"
 # Recording and plotting options
 ###########################################################
 
-cfg.recordStep = 250 #0.025  # Step size in ms to save data (e.g. V traces, LFP, etc)
+cfg.recordStep = 0.1 #0.025  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
-cfg.saveFolder = "dataSS3/"
+cfg.saveFolder = "dataSS4/"
 cfg.savePickle = False  # Save params, network and sim output to pickle file
 cfg.saveJson = True
 cfg.saveDataInclude = ["simData", "simConfig"]
@@ -296,3 +296,84 @@ layer_bounds = {
 
 # plot granger causality (run for 4 sec)
 # cfg.analysis.granger = {'cells1': ['L2i'], 'cells2': ['L4e'], 'label1': 'L2i', 'label2': 'L4e', 'timeRange': [500,4000], 'saveFig': True, 'binSize': 4}
+
+# Scale synapses weights -- optimized with min K-leak 1e-5
+cfg.excWeight_L2e = 0.034757230230507245
+cfg.excWeight_L2i = 0.007435639178903054
+cfg.excWeight_L4e = 0.00535800846139247
+cfg.excWeight_L4i = 0.004635132492217301
+cfg.excWeight_L5e = 0.0019321344065691371
+cfg.excWeight_L5i = 0.006431462642063759
+cfg.excWeight_L6e = 0.04045057917291838
+cfg.excWeight_L6i = 0.005087528200972051
+
+cfg.inhWeightScale_L2e = 5.4276668460112125
+cfg.inhWeightScale_L2i = 8.756914769882469
+cfg.inhWeightScale_L4e = 5.420514099517173
+cfg.inhWeightScale_L4i = 7.495240884820139
+cfg.inhWeightScale_L5e = 5.108836856739071
+cfg.inhWeightScale_L5i = 4.90013157293792
+cfg.inhWeightScale_L6e = 3.9141625146296994
+cfg.inhWeightScale_L6i = 3.3945419748291674
+
+
+cfg.gnabar = {  'L2e': 0.013775199886666471,
+                'L2i': 0.027571819187312125,
+                'L4e': 0.02266830013423984,
+                'L4i': 0.029102001912798815,
+                'L5e': 0.02535744555783162,
+                'L5i': 0.03081119693176582,
+                'L6e': 0.014647818970212627,
+                'L6i': 0.02446848239757097,
+        }
+cfg.gkbar = {   'L2e': 0.006256129398906307,
+                'L2i': 0.006185825153046352,
+                'L4e': 0.0060870611284361865,
+                'L4i': 0.005724121639411816,
+                'L5e': 0.003982061249246858,
+                'L5i': 0.0055982570786592785,
+                'L6e': 0.005668206201621326,
+                'L6i': 0.005933783169921459,
+        }
+cfg.ukcc2 = {   'L2e': 0.0032046084164501472,
+                'L2i': 0.0031509077144799,
+                'L4e': 0.005288380837054354,
+                'L4i': 0.00478331053234558,
+                'L5e': 0.002703258989241554,
+                'L5i': 0.010726802038549095,
+                'L6e': 0.006728384451439758,
+                'L6i': 0.005139646428462374,
+        }
+cfg.unkcc1 = {  'L2e': 2.9003078243583347,
+                'L2i': 5.162627978681683,
+                'L4e': 5.060143706759098,
+                'L4i': 3.4421630020948286,
+                'L5e': 7.306905091131788,
+                'L5i': 1.6016563592554993,
+                'L6e': 3.070483105176143,
+                'L6i': 2.5419746302997566,
+        }
+cfg.pmax = {    'L2e': 5090.568389284457,
+                'L2i': 4392.347665970014,
+                'L4e': 7010.1014895806475,
+                'L4i': 4076.953587990565,
+                'L5e': 5258.713071981389,
+                'L5i': 7070.669845884245,
+                'L6e': 9419.798954366586,
+                'L6i': 9050.513090329627,
+        }
+cfg.gpas = {    'L2e': 6.183693542550501e-05,
+                'L2i': 2.6478580348538306e-05,
+                'L4e': 2.474426208575386e-05,
+                'L4i': 2.7062297576296835e-05,
+                'L5e': 4.010647009384075e-05,
+                'L5i': 5.412714996482607e-05,
+                'L6e': 3.5297701447167655e-05,
+                'L6i': 3.286565186740838e-05,
+        }
+
+for k in ['gnabar', 'gkbar', 'ukcc2', 'unkcc1', 'pmax', 'gpas']:
+    setattr(cfg,k, getattr(cfg,k)[cfg.popOpt[0]])
+
+
+

@@ -9,8 +9,8 @@ from cfgPopOpt import cfg
 import pandas as pd
 
 # Paths
-HOMEDIR = "/u/adam"  #'/ddn/adamjhn'
-DATADIR = "/tera/adam/data"  #'/ddn/adamjhn/data
+HOMEDIR = "/home/adam"  #'/ddn/adamjhn'
+DATADIR = "/home/adam/models/data"  #'/ddn/adamjhn/data
 
 # Original PD model stats
 target = pd.read_csv("PDNetStats.csv").set_index("population")
@@ -177,6 +177,9 @@ def batch(phase=1, pops=None):
             params["unkcc1"] = [0.75 * 2.05523, 1.25 * 5.99990]
             params["pmax"] = [0.75 * 5000.01684, 1.25 * 7866.09050]
             params["gpas"] = [0.75 * 0.00003, 1.25 * 0.00005]
+            if pop == "L2e":
+                params['excWeight_L2e'] = [0.75*0.0527, 1.25*0.0560]
+                params['inhWeightScale_L2e'] = [0.75*8.0690, 1.25*8.8004]
             if pop == "L2i":
                 params["excWeight_L2i"] = [0.75 * 0.00805, 1.25 * 0.01283]
                 params["inhWeightScale_L2i"] = [0.75 * 8.45524, 1.25 * 11.01467]
