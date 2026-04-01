@@ -9,8 +9,8 @@ from cfgPopOpt import cfg
 import pandas as pd
 
 # Paths
-HOMEDIR = "/home/adam"  #'/ddn/adamjhn'
-DATADIR = "/home/adam/models/data"  #'/ddn/adamjhn/data'
+HOMEDIR = "/u/adam"  #'/ddn/adamjhn'
+DATADIR = "/tera/adam/data"  #'/ddn/adamjhn/data
 
 # Original PD model stats
 target = pd.read_csv("PDNetStats.csv").set_index("population")
@@ -151,9 +151,12 @@ def batch(phase=1, pops=None):
         python batchOpt.py 1        # phase 1
         python batchOpt.py 2        # phase 2
     """
-    bcfg = {}
     if pops is not None:
-        bcfg["popOpt"] = pops
+        cfg.popOpt = pops
+        cfg.recordCellsSpikes = [
+            f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)
+        ]
+        cfg.recordCells = [f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)]
     else:
         pops = cfg.popOpt
     params = specs.ODict()
@@ -163,61 +166,39 @@ def batch(phase=1, pops=None):
         for pop in pops:
             params[f"excWeight_{pop}"] = [0.001, 0.5]
             params[f"inhWeightScale_{pop}"] = [1, 20]
+        label = "phase1_" + "_".join(pops)
     elif phase == 2:
         # use the results from phase 1 for weights and modify other
         # params
         for pop in pops:
-            params[f"excWeight_{pop}"] = [0.001, 0.5]
-            params[f"inhWeightScale_{pop}"] = [1, 20]
             params["gnabar"] = [0.75 * 0.01385, 1.25 * 0.02500]
             params["gkbar"] = [0.75 * 0.00400, 1.25 * 0.00510]
             params["ukcc2"] = [0.75 * 0.00100, 1.25 * 0.00975]
             params["unkcc1"] = [0.75 * 2.05523, 1.25 * 5.99990]
             params["pmax"] = [0.75 * 5000.01684, 1.25 * 7866.09050]
             params["gpas"] = [0.75 * 0.00003, 1.25 * 0.00005]
-        label = "phase1_full"
-    elif phase == 2:
-        # Phase 2: narrowed from phase 1 top 20 + 20% margin
-        # inhWeightScale lower bound extended to 0.1 to allow inh < exc
-        params["excWeight_L2e"] = [0.0151, 0.0305]
-        params["excWeight_L4e"] = [0.0189, 0.0615]
-        params["excWeight_L5e"] = [0.0046, 0.0415]
-        params["excWeight_L6e"] = [0.0001, 1.0]
-        params["excWeight_L2i"] = [0.0120, 0.0491]
-        params["excWeight_L4i"] = [0.0106, 0.0354]
-        params["excWeight_L5i"] = [0.0124, 0.0614]
-        params["excWeight_L6i"] = [0.0215, 0.0677]
-        params["inhWeightScale_L2e"] = [16.2760, 18.9602]
-        params["inhWeightScale_L4e"] = [10.6938, 18.9861]
-        params["inhWeightScale_L5e"] = [9.4876, 16.3864]
-        params["inhWeightScale_L2i"] = [12.6409, 14.9574]
-        params["inhWeightScale_L4i"] = [10.2795, 17.9434]
-        params["inhWeightScale_L5i"] = [7.7068, 12.7006]
-        params["inhWeightScale_L6i"] = [8.3897, 13.7480]
-        params["inhWeightScale_L6e"] = [0, 20]
-
-        """
-        params["excWeight_L2e"] = [0.001, 0.577]
-        params["excWeight_L2i"] = [0.101, 0.160]
-        params["excWeight_L4e"] = [0.171, 0.237]
-        params["excWeight_L4i"] = [0.018, 0.088]
-        params["excWeight_L5e"] = [0.001, 0.046]
-        params["excWeight_L5i"] = [0.123, 0.259]
-        params["excWeight_L6e"] = [0.202, 0.341]
-        params["excWeight_L6i"] = [0.109, 0.407]
-        params["inhWeightScale_L2e"] = [0.1, 17.64]
-        params["inhWeightScale_L2i"] = [2.18, 7.64]
-        params["inhWeightScale_L4e"] = [0.1, 3.36]
-        params["inhWeightScale_L4i"] = [5.32, 7.70]
-        params["inhWeightScale_L5e"] = [6.80, 9.01]
-        params["inhWeightScale_L5i"] = [0.1, 4.34]
-        params["inhWeightScale_L6e"] = [0.1, 3.97]
-        params["inhWeightScale_L6i"] = [1.62, 7.47]
-        """
-        # Allow small biophysical adjustments around single cell optimum
-        params["pmax"] = [cfg.pmax * 0.75, cfg.pmax * 1.25]
-        params["gnabar"] = [cfg.gnabar * 0.75, cfg.gnabar * 1.25]
-        label = "phase2_refine"
+            if pop == "L2i":
+                params["excWeight_L2i"] = [0.75 * 0.00805, 1.25 * 0.01283]
+                params["inhWeightScale_L2i"] = [0.75 * 8.45524, 1.25 * 11.01467]
+            if pop == "L4e":
+                params["excWeight_L4e"] = [0.75 * 0.00100, 1.25 * 0.00877]
+                params["inhWeightScale_L4e"] = [0.75 * 2.09595, 1.25 * 6.27167]
+            if pop == "L4i":
+                params["excWeight_L4i"] = [0.75 * 0.00102, 1.25 * 0.00984]
+                params["inhWeightScale_L4i"] = [0.75 * 3.80757, 1.25 * 9.89350]
+            if pop == "L5e":
+                params["excWeight_L5e"] = [0.75 * 0.00108, 1.25 * 0.00187]
+                params["inhWeightScale_L5e"] = [0.75 * 3.77523, 1.25 * 5.03398]
+            if pop == "L5i":
+                params["excWeight_L5i"] = [0.75 * 0.00682, 1.25 * 0.00979]
+                params["inhWeightScale_L5i"] = [0.75 * 5.18400, 1.25 * 6.05486]
+            if pop == "L6e":
+                params["excWeight_L6e"] = [0.75 * 0.05390, 1.25 * 0.06738]
+                params["inhWeightScale_L6e"] = [0.75 * 4.80210, 1.25 * 5.68063]
+            if pop == "L6i":
+                params["excWeight_L6i"] = [0.75 * 0.00677, 1.25 * 0.01005]
+                params["inhWeightScale_L6i"] = [0.75 * 3.96751, 1.25 * 4.61209]
+        label = "phase2_full_" + "_".join(pops)
     else:
         """
         params[excWeight_L2e] = [0.072, 0.484]
@@ -274,9 +255,8 @@ def batch(phase=1, pops=None):
     # create Batch object with parameters to modify, and specifying files to use
     b = Batch(
         params=params,
-        cfgFile="cfgPopOpt.py",
+        cfg=cfg,
         netParamsFile="netParamsPopOpt.py",
-        initCfg=bcfg,
     )
 
     # Set output folder, grid method (all param combinations), and run configuration
@@ -305,7 +285,7 @@ def batch(phase=1, pops=None):
         "maxiters": 100_000,
         "maxtime": 8 * 60 * 60,
         "maxiter_wait": 120,
-        "time_sleep": 20,
+        "time_sleep": 5,
     }
 
     # Run batch simulations

@@ -232,7 +232,7 @@ for pop,count in zip(L,N_):
                 "numCells": 1,
                 "cellModel": pop,
                 "xRange": [0.0, cfg.sizeX],
-                "yRange": [popDepths[pop][0] * cfg.sizeY, cfg.sizeY * popDepths[i][pop]],
+                "yRange": [popDepths[pop][0] * cfg.sizeY, cfg.sizeY * popDepths[pop][1]],
                 "zRange": [0.0, cfg.sizeZ],
             }
         all_cells.append(f"{pop}_{idx}")
