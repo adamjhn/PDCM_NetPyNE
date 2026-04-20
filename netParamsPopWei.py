@@ -10,6 +10,7 @@ Modified to include concentration of Na, K, Cl and O2 using RxD.
 from netpyne import specs
 import numpy as np
 from neuron.units import sec, mM
+from neuron import h
 import math
 import json
 import pickle
@@ -375,9 +376,10 @@ nkcc1 = f"(unkcc1 * ({fko}) * ({nkcc1A} + {nkcc1B}))"
 kcc2 = "(ukcc2 * rxd.rxdmath.log((kki[cyt] * cli[cyt] * vol_ratio[cyt]**2) / (kko[ecs] * clo[ecs] * vol_ratio[ecs]**2)))"
 
 # Nerst equation - reversal potentials
-ena = "26.64 * rxd.rxdmath.log(nao[ecs]*vol_ratio[cyt]/(nai[cyt]*vol_ratio[ecs]))"
-ek = "26.64 * rxd.rxdmath.log(kko[ecs]*vol_ratio[cyt]/(kki[cyt]*vol_ratio[ecs]))"
-ecl = "26.64 * rxd.rxdmath.log(cli[cyt]*vol_ratio[ecs]/(clo[ecs]*vol_ratio[cyt]))"
+escale = 1e3 * h.R * (273.15 + cfg.hParams["celsius"]) / h.FARADAY
+ena = f"{escale} * rxd.rxdmath.log(nao[ecs]*vol_ratio[cyt]/(nai[cyt]*vol_ratio[ecs]))"
+ek = f"{escale} * rxd.rxdmath.log(kko[ecs]*vol_ratio[cyt]/(kki[cyt]*vol_ratio[ecs]))"
+ecl = f"{escale} * rxd.rxdmath.log(cli[cyt]*vol_ratio[ecs]/(clo[ecs]*vol_ratio[cyt]))"
 
 o2ecs = "o2_extracellular[ecs_o2]"
 # Wei model has o2 baseline 32mg/L, i.e. varies between 0 and 6.0mM

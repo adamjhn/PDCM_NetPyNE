@@ -84,7 +84,7 @@ cfg.recordCells = [
 ]
 cfg.recordTraces = {
     f"{var}_soma": {"sec": "soma", "loc": 0.5, "var": var}
-    for var in ["v", "nai", "ki", "cli", "o2_consumedo", 'oxygeno', 'oxygenii','ATPi', 'ADPi', 'AMPi','Posi']
+    for var in ["v", "nai", "ki", "cli", "o2_consumedo"]
 }
 """
 cfg.recordTraces["exc_i"] = {"sec":'soma', "loc":0.5, "synMech":"exc", "var":"i", 'index':0}
@@ -116,25 +116,6 @@ cfg.alpha_ecs = 0.2
 cfg.tort_ecs = 1.6
 cfg.o2drive = 0.013
 cfg.ox = "perfused"
-cfg.ATPss = 3.18 #mM PMC3524514 -- whole brain
-cfg.ATPDc = 0.445 #um**2/ms
-cfg.Ko2 = 0.3e-3 #mM  # Km for O2 at cytochrome c oxidase
-cfg.KmADP_synthase = 0.025  # mM, from PMC3833997 (human skeletal muscle)
-cfg.KmPi_synthase = 1.0     # mM, from PMC8434986 (cardiac tissue)
-cfg.KiATP_synthase = 10.0   # mM, competitive inhibition constant for ATP (allows steady-state flux)
-cfg.ADPss = 0.0944444444444444 # such that D2 (MgADP == 0.05 mM)
-cfg.tauADP = 1
-cfg.Pss = 4.2
-cfg.tauP = 1
-cfg.ATPase_basal_density = 0.05 # mM/ms
-
-# Adenylate kinase equilibrium: 2*ADP <-> ATP + AMP
-# At equilibrium: Keq = [ATP][AMP]/[ADP]^2 ≈ 1 (typical for adenylate kinase)
-# Solving: AMP = Keq * ADP^2 / ATP = 1.0 * (0.05)^2 / 2.59 ≈ 0.001 mM
-# Solving adenylateKinase rate_f == rate_b at steady-state gives exact value.
-cfg.AMPss = 0.0692795435459248 # mM, from adenylate kinase equilibrium with ADPss and ATPss
-cfg.Mg = 0.5 #mM (free Mg) https://doi.org/10.3390/ijms20143439
-
 
 cfg.sa2v = 3.4  # False
 
@@ -171,10 +152,8 @@ cfg.gnabar = 0.02211617598652266
 cfg.gkbar = 0.004001629507118593
 cfg.ukcc2 = 0.0019830617654271222
 cfg.unkcc1 = 6.506198176269446
-cfg.pmax = 5035.941975532757
+cfg.pmax = 3 #5035.941975532757
 cfg.gpas = 4.2407540290597475e-05
-
-
 
 cfg.gkleak_scale = 1
 cfg.KKo = 5.3
@@ -182,26 +161,6 @@ cfg.KNai = 27.9
 cfg.GliaKKo = 3.5  # 4.938189537703508  # originally 3.5 mM
 cfg.GliaPumpScale = 1 / 3  # 1 / 3  # originally 1/3
 cfg.scaleConnWeight = 1
-
-#converstionFactor: μmol·min−1·mg−1 -> mM/ms
-converstionFactor = 49*9.7e-7/16000 # mg of enzyme/m^3
-converstionFactor *= 60e3 * 1e6 # μmol/min -> mol/ms
-#    1g tissue = 9.7e-7 m^3 
-#    49 units/g  (of tissue) brain
-# 1,600 units/mg (of enzyme) muscle 
-# unit 1 μmol/min
-cfg.AK = {'KmAMP'   :   0.12, # mM
-          'KiAMP'   :   3.3,  # mM
-          'KmMgATP' :   0.06, # mM
-          'KmADP'   :	0.028,# mM
-          'KiADP'   :   0.91, # mM
-          'KmMgADP' :	0.033,# mM
-          'kp1'	    :   14_000 * converstionFactor, #mM/ms
-          'km1'     :	8_000 * converstionFactor,  #mM/ms
-          'kp2'     :	710  * converstionFactor,   #mM/ms
-          'km2'     :	960 * converstionFactor,    #mM/ms
-          'KMg'     :   2.5,    #/mM (stability constant)
-}
 
 
 ###########################################################
@@ -243,7 +202,7 @@ cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeightScale}"
 # Recording and plotting options
 ###########################################################
 
-cfg.recordStep = 0.1 #0.025  # Step size in ms to save data (e.g. V traces, LFP, etc)
+cfg.recordStep = 100 #0.025  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
 cfg.saveFolder = "dataSS4/"
 cfg.savePickle = False  # Save params, network and sim output to pickle file
@@ -374,6 +333,5 @@ cfg.gpas = {    'L2e': 6.183693542550501e-05,
 
 for k in ['gnabar', 'gkbar', 'ukcc2', 'unkcc1', 'pmax', 'gpas']:
     setattr(cfg,k, getattr(cfg,k)[cfg.popOpt[0]])
-
 
 
