@@ -6,7 +6,6 @@ import numpy as np
 from cfgSS import cfg
 from netParamsSingleCell import netParams
 
-
 taum = 10  # ms
 tauref = 2  # ms
 Vrest = -65  # mV
@@ -96,7 +95,7 @@ def batch():
         "allocation": "default",
         "email": "adam.newton@neurosim.downstate.edu",
         "reservation": None,
-        "folder": "/u/adam/models/PDCM_NetPyNE" #"/ddn/adamjhn/models/PDCM_NetPyNE",
+        "folder": "/u/adam/models/PDCM_NetPyNE",  # "/ddn/adamjhn/models/PDCM_NetPyNE",
         #'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
     b.batchLabel = "cellFit6"

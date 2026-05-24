@@ -89,11 +89,6 @@ def fitnessFunc(sd, **kwargs):
             if trace[0] != 0:
                 rxdscore += abs(trace[0] - trace[-1]) / abs(trace[0])
 
-        # ATP homeostasis
-        atp = sd["ATPi_soma"][f"cell_{gid}"]
-        if atp[0] > 0.01:
-            atp_score += abs(atp[0] - atp[-1]) / atp[0]
-
         # O2 consumption
         o2score += sd["o2_consumedo_soma"][f"cell_{gid}"][-1]
 
@@ -108,7 +103,6 @@ def fitnessFunc(sd, **kwargs):
     spike_count_score /= n_cells
     vr_score /= n_cells
     rxdscore /= n_cells
-    atp_score /= n_cells
     o2score /= n_cells
 
     # Penalty for no spikes: ensures any spiking trial scores better
@@ -122,12 +116,11 @@ def fitnessFunc(sd, **kwargs):
         + synchrony_score  # ~0-1: synchrony
         + spike_count_score  # ~0-1: per-cell spike count
         + vr_score  # van Rossum distance (unbounded but typically small)
-        + 5 * rxdscore  # ~0-6: ion homeostasis
-        + atp_score  # ~0-1: ATP homeostasis
+        + rxdscore  # ~0-6: ion homeostasis
         + o2score  # O2 consumption
         + vscore  # voltage floor penalty
         + 10 * no_spike_penalty  # penalty for zero spikes
-        + 80 * no_spike_pop_penalty
+        + 10 * no_spike_pop_penalty
     )
 
     print(
@@ -166,42 +159,94 @@ def batch(phase=1, pops=None):
         for pop in pops:
             params[f"excWeight_{pop}"] = [0.001, 0.5]
             params[f"inhWeightScale_{pop}"] = [1, 20]
-        label = "phase1_" + "_".join(pops)
+            # param range for top 100 fits to fI curve
+            params["gnabar"] = [1.3423e-02, 2.7863e-02]
+            params["gkbar"] = [1.4131e-03, 1.0222e-02]
+            params["ukcc2"] = [6.0787e-01, 1.2847e00]
+            params["unkcc1"] = [1.8316e00, 4.7665e00]
+            params["pmax"] = [1.9383e01, 7.0006e01]
+            params["gpas"] = [6.4633e-08, 1.3207e-05]
+
+        label = "phase1_wei_" + "_".join(pops)
     elif phase == 2:
         # use the results from phase 1 for weights and modify other
         # params
         for pop in pops:
-            params["gnabar"] = [0.75 * 0.01385, 1.25 * 0.02500]
-            params["gkbar"] = [0.75 * 0.00400, 1.25 * 0.00510]
-            params["ukcc2"] = [0.75 * 0.00100, 1.25 * 0.00975]
-            params["unkcc1"] = [0.75 * 2.05523, 1.25 * 5.99990]
-            params["pmax"] = [0.75 * 5000.01684, 1.25 * 7866.09050]
-            params["gpas"] = [0.75 * 0.00003, 1.25 * 0.00005]
             if pop == "L2e":
-                params["excWeight_L2e"] = [0.75 * 0.0527, 1.25 * 0.0560]
-                params["inhWeightScale_L2e"] = [0.75 * 8.0690, 1.25 * 8.8004]
+                params["excWeight_L2e"] = [0.75 * 1.0673e-03, 1.25 * 1.1137e-02]
+                params["inhWeightScale_L2e"] = [0.75 * 3.0374e00, 1.25 * 6.1293e00]
+                params["gnabar"] = [0.75 * 1.3423e-02, 1.25 * 2.1281e-02]
+                params["gkbar"] = [0.75 * 1.5339e-03, 1.25 * 1.0219e-02]
+                params["ukcc2"] = [0.75 * 6.0942e-01, 1.25 * 7.8374e-01]
+                params["unkcc1"] = [0.75 * 2.3719e00, 1.25 * 3.1377e00]
+                params["pmax"] = [0.75 * 2.9588e01, 1.25 * 3.9337e01]
+                params["gpas"] = [0.75 * 2.1909e-07, 1.25 * 9.4016e-06]
             if pop == "L2i":
-                params["excWeight_L2i"] = [0.75 * 0.00805, 1.25 * 0.01283]
-                params["inhWeightScale_L2i"] = [0.75 * 8.45524, 1.25 * 11.01467]
+                params["excWeight_L2i"] = [0.75 * 1.0098e-03, 1.25 * 1.4528e-03]
+                params["inhWeightScale_L2i"] = [0.75 * 3.9150e00, 1.25 * 5.5408e00]
+                params["gnabar"] = [0.75 * 1.8295e-02, 1.25 * 2.1831e-02]
+                params["gkbar"] = [0.75 * 8.5274e-03, 1.25 * 1.0220e-02]
+                params["ukcc2"] = [0.75 * 6.0994e-01, 1.25 * 7.4552e-01]
+                params["unkcc1"] = [0.75 * 3.2804e00, 1.25 * 4.0593e00]
+                params["pmax"] = [0.75 * 3.3690e01, 1.25 * 6.8453e01]
+                params["gpas"] = [0.75 * 8.8509e-06, 1.25 * 1.2478e-05]
             if pop == "L4e":
-                params["excWeight_L4e"] = [0.75 * 0.00100, 1.25 * 0.00877]
-                params["inhWeightScale_L4e"] = [0.75 * 2.09595, 1.25 * 6.27167]
+                params["excWeight_L4e"] = [0.75 * 6.7591e-03, 1.25 * 9.5212e-03]
+                params["inhWeightScale_L4e"] = [0.75 * 5.4192e00, 1.25 * 6.6952e00]
+                params["gnabar"] = [0.75 * 1.3424e-02, 1.25 * 1.8392e-02]
+                params["gkbar"] = [0.75 * 5.6268e-03, 1.25 * 8.4744e-03]
+                params["ukcc2"] = [0.75 * 6.1047e-01, 1.25 * 8.9941e-01]
+                params["unkcc1"] = [0.75 * 2.3048e00, 1.25 * 4.6647e00]
+                params["pmax"] = [0.75 * 2.1820e01, 1.25 * 6.9988e01]
+                params["gpas"] = [0.75 * 7.3670e-06, 1.25 * 1.2654e-05]
             if pop == "L4i":
-                params["excWeight_L4i"] = [0.75 * 0.00102, 1.25 * 0.00984]
-                params["inhWeightScale_L4i"] = [0.75 * 3.80757, 1.25 * 9.89350]
+                params["excWeight_L4i"] = [0.75 * 7.0138e-03, 1.25 * 2.3541e-02]
+                params["inhWeightScale_L4i"] = [0.75 * 1.1347e00, 1.25 * 9.8699e00]
+                params["gnabar"] = [0.75 * 1.3423e-02, 1.25 * 2.7571e-02]
+                params["gkbar"] = [0.75 * 5.7413e-03, 1.25 * 1.0222e-02]
+                params["ukcc2"] = [0.75 * 6.9146e-01, 1.25 * 1.2504e00]
+                params["unkcc1"] = [0.75 * 1.8342e00, 1.25 * 4.7660e00]
+                params["pmax"] = [0.75 * 2.2373e01, 1.25 * 7.0001e01]
+                params["gpas"] = [0.75 * 1.3742e-06, 1.25 * 1.2803e-05]
+
             if pop == "L5e":
-                params["excWeight_L5e"] = [0.75 * 0.00108, 1.25 * 0.00187]
-                params["inhWeightScale_L5e"] = [0.75 * 3.77523, 1.25 * 5.03398]
+                params["excWeight_L5e"] = [0.75 * 1.0012e-03, 1.25 * 1.3136e-03]
+                params["inhWeightScale_L5e"] = [0.75 * 3.3898e00, 1.25 * 4.9652e00]
+                params["gnabar"] = [0.75 * 1.5833e-02, 1.25 * 2.0922e-02]
+                params["gkbar"] = [0.75 * 2.4968e-03, 1.25 * 1.0208e-02]
+                params["ukcc2"] = [0.75 * 8.8253e-01, 1.25 * 1.1366e00]
+                params["unkcc1"] = [0.75 * 2.0251e00, 1.25 * 4.5767e00]
+                params["pmax"] = [0.75 * 4.7010e01, 1.25 * 6.8377e01]
+                params["gpas"] = [0.75 * 8.1904e-07, 1.25 * 5.8539e-06]
             if pop == "L5i":
-                params["excWeight_L5i"] = [0.75 * 0.00682, 1.25 * 0.00979]
-                params["inhWeightScale_L5i"] = [0.75 * 5.18400, 1.25 * 6.05486]
+                params["excWeight_L5i"] = [0.75 * 6.5518e-03, 1.25 * 9.5801e-03]
+                params["inhWeightScale_L5i"] = [0.75 * 4.9211e00, 1.25 * 7.8452e00]
+                params["gnabar"] = [0.75 * 1.4798e-02, 1.25 * 2.2359e-02]
+                params["gkbar"] = [0.75 * 1.4619e-03, 1.25 * 9.8231e-03]
+                params["ukcc2"] = [0.75 * 6.6555e-01, 1.25 * 1.0005e00]
+                params["unkcc1"] = [0.75 * 1.9656e00, 1.25 * 4.6334e00]
+                params["pmax"] = [0.75 * 2.3602e01, 1.25 * 6.9890e01]
+                params["gpas"] = [0.75 * 6.4816e-07, 1.25 * 9.3097e-06]
+
             if pop == "L6e":
-                params["excWeight_L6e"] = [0.75 * 0.05390, 1.25 * 0.06738]
-                params["inhWeightScale_L6e"] = [0.75 * 4.80210, 1.25 * 5.68063]
+                params["excWeight_L6e"] = [0.75 * 1.0337e-03, 1.25 * 8.3645e-03]
+                params["inhWeightScale_L6e"] = [0.75 * 1.2261e00, 1.25 * 3.3772e00]
+                params["gnabar"] = [0.75 * 1.8999e-02, 1.25 * 2.0584e-02]
+                params["gkbar"] = [0.75 * 4.7810e-03, 1.25 * 6.5728e-03]
+                params["ukcc2"] = [0.75 * 7.1454e-01, 1.25 * 8.4827e-01]
+                params["unkcc1"] = [0.75 * 1.8318e00, 1.25 * 2.0100e00]
+                params["pmax"] = [0.75 * 4.1655e01, 1.25 * 6.8343e01]
+                params["gpas"] = [0.75 * 8.1327e-06, 1.25 * 1.1284e-05]
             if pop == "L6i":
-                params["excWeight_L6i"] = [0.75 * 0.00677, 1.25 * 0.01005]
-                params["inhWeightScale_L6i"] = [0.75 * 3.96751, 1.25 * 4.61209]
-        label = "phase2_full_" + "_".join(pops)
+                params["excWeight_L6i"] = [0.75 * 1.0022e-03, 1.25 * 1.6081e-03]
+                params["inhWeightScale_L6i"] = [0.75 * 1.8119e00, 1.25 * 3.3564e00]
+                params["gnabar"] = [0.75 * 2.2387e-02, 1.25 * 2.6949e-02]
+                params["gkbar"] = [0.75 * 1.9407e-03, 1.25 * 1.0221e-02]
+                params["ukcc2"] = [0.75 * 6.1126e-01, 1.25 * 7.7179e-01]
+                params["unkcc1"] = [0.75 * 3.5529e00, 1.25 * 4.5937e00]
+                params["pmax"] = [0.75 * 1.9384e01, 1.25 * 6.8010e01]
+                params["gpas"] = [0.75 * 2.4965e-06, 1.25 * 1.1731e-05]
+        label = "phase2_wei_" + "_".join(pops)
     else:
         # based on top 100 results
         # allow larger pmax, gkbar -- smaller execWeight
@@ -243,14 +288,14 @@ def batch(phase=1, pops=None):
     b = Batch(
         params=params,
         cfg=cfg,
-        netParamsFile="netParamsPopOpt.py",
+        netParamsFile="netParamsPopWei.py",
     )
 
     # Set output folder, grid method (all param combinations), and run configuration
     b.method = "optuna"
     b.runCfg = {
         "type": "mpi_direct",
-        "script": "initSSVecStim.py",
+        "script": "initPopWei.py",
         # options required only for hpc
         "mpiCommand": "",
         "executor": "/bin/bash",
@@ -269,10 +314,10 @@ def batch(phase=1, pops=None):
         "fitnessFunc": fitnessFunc,
         "fitnessFuncArgs": fitnessFuncArgs,
         "maxFitness": fitnessFuncArgs["maxFitness"],
-        "maxiters": 100_000,
-        "maxtime": 8 * 60 * 60,
-        "maxiter_wait": 120,
-        "time_sleep": 5,
+        "maxiters": 500_000_000,
+        "maxtime": 5 * 24 * 60 * 60,
+        "maxiter_wait": 280,
+        "time_sleep": 10,
     }
 
     # Run batch simulations

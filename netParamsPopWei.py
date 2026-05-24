@@ -65,19 +65,21 @@ netParams = (
 # population locations
 # from Schmidt et al 2018, PLoS Comp Bio, Macaque V1
 netParams.sizeX = cfg.sizeX  # x-dimension (horizontal length) size in um
-netParams.sizeY = cfg.sizeY  # y-dimension (vertical height or cortical depth) size in um
+netParams.sizeY = (
+    cfg.sizeY
+)  # y-dimension (vertical height or cortical depth) size in um
 netParams.sizeZ = cfg.sizeZ  # z-dimension (horizontal depth) size in um
 netParams.shape = "cylinder"  # cylindrical (column-like) volume
 
 popDepths = {
-    'L2e':[0.08, 0.27],
-    'L2i':[0.08, 0.27],
-    'L4e':[0.27, 0.58],
-    'L4i':[0.27, 0.58],
-    'L5e':[0.58, 0.73],
-    'L5i':[0.58, 0.73],
-    'L6e':[0.73, 1.0],
-    'L6i':[0.73, 1.0],
+    "L2e": [0.08, 0.27],
+    "L2i": [0.08, 0.27],
+    "L4e": [0.27, 0.58],
+    "L4i": [0.27, 0.58],
+    "L5e": [0.58, 0.73],
+    "L5i": [0.58, 0.73],
+    "L6e": [0.73, 1.0],
+    "L6i": [0.73, 1.0],
 }
 
 # cell property rules -- single compartment model from population SD model
@@ -129,7 +131,7 @@ Vreset = -65 (mV) : -49 (mV) :
 #Fixed firing threshold
 Vteta  = -50 (mV)"""
 # Membrane capacity
-C_m = cfg.Cm / (2e-8 * np.pi * cfg.somaR ** 2)  # pF
+C_m = cfg.Cm / (2e-8 * np.pi * cfg.somaR**2)  # pF
 # Mean amplitude of the postsynaptic potential (in mV).
 w_v = 0.15
 # Mean amplitude of the postsynaptic potential (in pA).
@@ -189,7 +191,7 @@ netParams.delayMin_e = 1.5
 netParams.ddelay = 0.5
 netParams.delayMin_i = 0.75
 netParams.weightMin = cfg.weightMin
-netParams.dweight = cfg.dWeight 
+netParams.dweight = cfg.dWeight
 
 # cell property rules
 for pop in L:
@@ -204,18 +206,21 @@ for pop in L:
 # ------------------------------------------------------------------------------
 # create populations
 all_cells = []
-for pop,count in zip(L,N_):
+for pop, count in zip(L, N_):
     for idx in range(count):
-        if 'L2' in pop:
+        if "L2" in pop:
             netParams.popParams[f"{pop}_{idx}"] = {
                 "cellType": pop,
                 "numCells": 1,
                 "cellModel": pop,
                 "xRange": [0.0, cfg.sizeX],
-                "yRange": [popDepths[pop][0] * cfg.sizeY, cfg.sizeY * popDepths[pop][1]],
+                "yRange": [
+                    popDepths[pop][0] * cfg.sizeY,
+                    cfg.sizeY * popDepths[pop][1],
+                ],
                 "zRange": [0.0, cfg.sizeZ],
             }
-        elif 'L6' in pop:
+        elif "L6" in pop:
             netParams.popParams[f"{pop}_{idx}"] = {
                 "cellType": pop,
                 "numCells": 1,
@@ -233,27 +238,31 @@ for pop,count in zip(L,N_):
                 "numCells": 1,
                 "cellModel": pop,
                 "xRange": [0.0, cfg.sizeX],
-                "yRange": [popDepths[pop][0] * cfg.sizeY, cfg.sizeY * popDepths[pop][1]],
+                "yRange": [
+                    popDepths[pop][0] * cfg.sizeY,
+                    cfg.sizeY * popDepths[pop][1],
+                ],
                 "zRange": [0.0, cfg.sizeZ],
             }
         all_cells.append(f"{pop}_{idx}")
+
 
 ############################################################
 # Connectivity parameters
 ############################################################
 def filterTimes(inputs, weights, offset=-1, thresh=1e-9):
-    """ sum inputs that are less than `thresh` apart and shift by `offset`
-        The offset allows for non-zero delay when replaying the inputs.
-    """ 
-    inp = [max(0,inputs[0] + offset)]   # start with the first input
+    """sum inputs that are less than `thresh` apart and shift by `offset`
+    The offset allows for non-zero delay when replaying the inputs.
+    """
+    inp = [max(0, inputs[0] + offset)]  # start with the first input
     wei = [weights[0]]
     for t, w in zip(inputs[1:], weights[1:]):
-        tnext = max(0,t + offset)       # time of next input
+        tnext = max(0, t + offset)  # time of next input
         if tnext - inp[-1] > thresh:
-            inp.append(tnext)           # add next input
+            inp.append(tnext)  # add next input
             wei.append(w)
         else:
-            wei[-1] += w        # keep current input -- but update weight
+            wei[-1] += w  # keep current input -- but update weight
         # stop if input time exceeds duration
         if inp[-1] >= cfg.duration:
             break
@@ -289,7 +298,7 @@ for pop, sz in zip(L, N_Full):
             netParams.connParams[f"conn_{pop}_{idx}_{syn}"] = {
                 "preConds": {"pop": f"vec_{pop}_{idx}_{syn}"},
                 "postConds": {"pop": f"{pop}_{idx}"},
-                'probability': 1.0,
+                "probability": 1.0,
                 "weight": weightScale,  # synaptic weight
                 "delay": 1,
                 "synMech": syn,
@@ -321,7 +330,7 @@ constants = {
     "vtau": 1 / 250.0,
     "g_gliamax": 5 * mM / sec,
     "beta0": 7.0,
-    "avo": 6.0221409 * (10 ** 23),
+    "avo": 6.0221409 * (10**23),
     "p_max": cfg.pmax * mM / sec,
     "nao_initial": 144.0,
     "nai_initial": 18.0,
@@ -365,7 +374,6 @@ beta_n0 = 0.5 * math.exp(-(constants["v_initial"] + 57.0) / 40.0)
 n_initial = alpha_n0 / (beta_n0 + alpha_n0)
 
 
-
 ### reactions
 gna = "gnabar*mgate**3*hgate"
 gk = "gkbar*ngate**4"
@@ -398,7 +406,7 @@ pump = f"{p} * {pump_max}"  # pump rate scaled by available o2
 pumpAg = "(1.0 / (1.0 + rxd.rxdmath.exp((25 - gnai_initial)/3.0)))"
 pumpBg = f"(1.0 / (1.0 + rxd.rxdmath.exp({cfg.GliaKKo} - kko[ecs] / vol_ratio[ecs])))"
 
-avo = 6.0221409 * (10 ** 23)
+avo = 6.0221409 * (10**23)
 volume_scale = 1e-18 * avo / cfg.sa2v
 osm = "(1.1029 - 0.1029*rxd.rxdmath.exp( ( (nao[ecs] + kko[ecs] + clo[ecs] + 18.0)/vol_ratio[ecs] - (nai[cyt] + kki[cyt] + cli[cyt] + 132.0)/vol_ratio[cyt])/20.0))"
 scalei = str(avo * 1e-18)
@@ -433,11 +441,19 @@ def initEval(ratestr):
 
 
 min_pmax = f"p_max * ({nkcc1} + {kcc2} + {gk} * (v_initial - {ek})/({volume_scale}))/(2*{pump})"
-min_leak = initEval(f"5e-5*{scale}*(v_initial - {ek})/((2*{volume_scale}*{pumpA}*{pumpB}*{p}))")
+min_leak = initEval(
+    f"5e-5*{scale}*(v_initial - {ek})/((2*{volume_scale}*{pumpA}*{pumpB}*{p}))"
+)
 pmin = initEval(min_pmax)
 if constants["p_max"] < pmin + min_leak:
     print("Pump current is too low to balance K+ currents with gkbar_l 5e-5")
     print(f"p_max set to {pmin + min_leak}")
+    print(f"nkcc1", initEval(nkcc1))
+    print(f"kcc2", initEval(kcc2))
+    print(f"gk", initEval(gk))
+    print(f"scale", scale)
+    print(f"volume_scale", volume_scale)
+    print(f"pumpA*pumpB*p", initEval(f"{pumpA}*{pumpB}*{p}"))
     constants["p_max"] = pmin + min_leak
 
 # rescale pmax
@@ -458,7 +474,7 @@ constants["gkbar_l"] = cfg.gkleak_scale * initEval(kbalance)
 constants["gnabar_l"] = initEval(nabalance)
 
 if constants["gkbar_l"] < 0:
-    if abs(constants["gkbar_l"])< 1e-9:
+    if abs(constants["gkbar_l"]) < 1e-9:
         constants["gkbar_l"] = 0
     else:
         raise Exception(f"Negative leak gkbar_l: {constants['gkbar_l']}")

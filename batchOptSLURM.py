@@ -83,7 +83,7 @@ def batch():
 #module load OpenMPI/4.0.5-GCC-10.2.0 
 #source /vast/palmer/apps/avx2/software/miniconda/23.1.0/etc/profile.d/conda.sh
 #conda activate py310
-"""
+""",
         #'custom': 'export LD_LIBRARY_PATH="$HOME/.openmpi/lib"' # only for conda users
     }
     b.batchLabel = "weightsRate"

@@ -27,11 +27,11 @@ cfg.duration = 1000  # Duration of the simulation, in ms
 cfg.dt = 0.025  # Internal integration timestep to use
 cfg.verbose = False  # Show detailed messages
 cfg.seeds["m"] = 123
-cfg.popOpt = ['L2e']
+cfg.popOpt = ["L2e"]
 cfg.printPopAvgRates = False
-cfg.hParams["celsius"] = 34
+cfg.hParams["celsius"] = 37
 cfg.hParams["v_init"] = -70
-cfg.cvode_active = False 
+cfg.cvode_active = False
 # scaling factors
 cfg.poissonRateFactor = 1.0
 cfg.connected = True
@@ -42,16 +42,16 @@ cfg.random123 = True
 
 # Size of Network. Adjust this constants, please!
 cfg.ScaleFactor = 0.16  # 1.0 = 80.000
-cfg.scaleConnWeightNetStims = 1 
+cfg.scaleConnWeightNetStims = 1
 cfg.scaleConnWeightNetStimStd = 1
 
 # set the following 3 options to False when running large-scale versions of the model (>50% scale) to save memory
-cfg.saveCellSecs = True 
+cfg.saveCellSecs = True
 cfg.saveCellConns = True
 cfg.createPyStruct = True
 cfg.printPopAvgRates = True
 cfg.singleCells = False  # create one cell in each population
-cfg.printRunTime = False 
+cfg.printRunTime = False
 cfg.Kceil = 15.0
 cfg.nRec = 25
 cfg.cellPops = [
@@ -65,9 +65,7 @@ cfg.cellPops = [
     "L6i",
 ]  # record only spikes of cells (not ext stims)
 cfg.cellPopsInit = (-85, -60)
-cfg.recordCellsSpikes = [
-    f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)
-]
+cfg.recordCellsSpikes = [f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)]
 
 if cfg.recordStim:
     cfg.recordCellsSpikes += [
@@ -75,13 +73,11 @@ if cfg.recordStim:
     ]
     cfg.recordCellsSpikes += [f"bkg_THL{i}{ei}" for i in [4, 6] for ei in ["e", "i"]]
 
-#cfg.recordCells = [
+# cfg.recordCells = [
 #    (f"L{i}{ei}", idx) for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
-#]
+# ]
 
-cfg.recordCells = [
-    f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)
-]
+cfg.recordCells = [f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)]
 cfg.recordTraces = {
     f"{var}_soma": {"sec": "soma", "loc": 0.5, "var": var}
     for var in ["v", "nai", "ki", "cli", "o2_consumedo"]
@@ -103,7 +99,7 @@ cfg.seeds = {
 }
 # Network dimensions
 cfg.sizeX = 700  # 250.0 #1000
-cfg.sizeY = 2131.2851 #1470.0  # 250.0 #1000
+cfg.sizeY = 2131.2851  # 1470.0  # 250.0 #1000
 cfg.sizeZ = 700  # 200.0
 cfg.dx = 700
 cfg.Vtissue = cfg.sizeX * cfg.sizeY * cfg.sizeZ
@@ -128,10 +124,10 @@ cfg.epas = -70.00000000000013
 cfg.Cm = 1.0
 cfg.Ra = 100
 if cfg.sa2v:
-    cfg.somaR = (cfg.sa2v * cfg.rs ** 3 / 2.0) ** (1 / 2)
+    cfg.somaR = (cfg.sa2v * cfg.rs**3 / 2.0) ** (1 / 2)
 else:
     cfg.somaR = cfg.rs
-cfg.cyt_fraction = cfg.rs ** 3 / cfg.somaR ** 3
+cfg.cyt_fraction = cfg.rs**3 / cfg.somaR**3
 
 # sd init params
 cfg.k0 = 3.5
@@ -139,8 +135,8 @@ cfg.r0 = 100.0
 
 
 # Scale synapses weights -- optimized
-cfg.excWeight = 0.01 #0.9170195634091205
-cfg.inhWeightScale = 10#9.826449573438962
+cfg.excWeight = 0.01  # 0.9170195634091205
+cfg.inhWeightScale = 10  # 9.826449573438962
 
 
 cfg.weightMin = 0.1
@@ -152,7 +148,7 @@ cfg.gnabar = 0.02211617598652266
 cfg.gkbar = 0.004001629507118593
 cfg.ukcc2 = 0.0019830617654271222
 cfg.unkcc1 = 6.506198176269446
-cfg.pmax = 3 #5035.941975532757
+cfg.pmax = 3  # 5035.941975532757
 cfg.gpas = 4.2407540290597475e-05
 
 cfg.gkleak_scale = 1
@@ -202,7 +198,7 @@ cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeightScale}"
 # Recording and plotting options
 ###########################################################
 
-cfg.recordStep = 100 #0.025  # Step size in ms to save data (e.g. V traces, LFP, etc)
+cfg.recordStep = 100  # 0.025  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
 cfg.saveFolder = "dataSS4/"
 cfg.savePickle = False  # Save params, network and sim output to pickle file
@@ -276,62 +272,66 @@ cfg.inhWeightScale_L6e = 3.9141625146296994
 cfg.inhWeightScale_L6i = 3.3945419748291674
 
 
-cfg.gnabar = {  'L2e': 0.013775199886666471,
-                'L2i': 0.027571819187312125,
-                'L4e': 0.02266830013423984,
-                'L4i': 0.029102001912798815,
-                'L5e': 0.02535744555783162,
-                'L5i': 0.03081119693176582,
-                'L6e': 0.014647818970212627,
-                'L6i': 0.02446848239757097,
-        }
-cfg.gkbar = {   'L2e': 0.006256129398906307,
-                'L2i': 0.006185825153046352,
-                'L4e': 0.0060870611284361865,
-                'L4i': 0.005724121639411816,
-                'L5e': 0.003982061249246858,
-                'L5i': 0.0055982570786592785,
-                'L6e': 0.005668206201621326,
-                'L6i': 0.005933783169921459,
-        }
-cfg.ukcc2 = {   'L2e': 0.0032046084164501472,
-                'L2i': 0.0031509077144799,
-                'L4e': 0.005288380837054354,
-                'L4i': 0.00478331053234558,
-                'L5e': 0.002703258989241554,
-                'L5i': 0.010726802038549095,
-                'L6e': 0.006728384451439758,
-                'L6i': 0.005139646428462374,
-        }
-cfg.unkcc1 = {  'L2e': 2.9003078243583347,
-                'L2i': 5.162627978681683,
-                'L4e': 5.060143706759098,
-                'L4i': 3.4421630020948286,
-                'L5e': 7.306905091131788,
-                'L5i': 1.6016563592554993,
-                'L6e': 3.070483105176143,
-                'L6i': 2.5419746302997566,
-        }
-cfg.pmax = {    'L2e': 5090.568389284457,
-                'L2i': 4392.347665970014,
-                'L4e': 7010.1014895806475,
-                'L4i': 4076.953587990565,
-                'L5e': 5258.713071981389,
-                'L5i': 7070.669845884245,
-                'L6e': 9419.798954366586,
-                'L6i': 9050.513090329627,
-        }
-cfg.gpas = {    'L2e': 6.183693542550501e-05,
-                'L2i': 2.6478580348538306e-05,
-                'L4e': 2.474426208575386e-05,
-                'L4i': 2.7062297576296835e-05,
-                'L5e': 4.010647009384075e-05,
-                'L5i': 5.412714996482607e-05,
-                'L6e': 3.5297701447167655e-05,
-                'L6i': 3.286565186740838e-05,
-        }
+cfg.gnabar = {
+    "L2e": 0.013775199886666471,
+    "L2i": 0.027571819187312125,
+    "L4e": 0.02266830013423984,
+    "L4i": 0.029102001912798815,
+    "L5e": 0.02535744555783162,
+    "L5i": 0.03081119693176582,
+    "L6e": 0.014647818970212627,
+    "L6i": 0.02446848239757097,
+}
+cfg.gkbar = {
+    "L2e": 0.006256129398906307,
+    "L2i": 0.006185825153046352,
+    "L4e": 0.0060870611284361865,
+    "L4i": 0.005724121639411816,
+    "L5e": 0.003982061249246858,
+    "L5i": 0.0055982570786592785,
+    "L6e": 0.005668206201621326,
+    "L6i": 0.005933783169921459,
+}
+cfg.ukcc2 = {
+    "L2e": 0.0032046084164501472,
+    "L2i": 0.0031509077144799,
+    "L4e": 0.005288380837054354,
+    "L4i": 0.00478331053234558,
+    "L5e": 0.002703258989241554,
+    "L5i": 0.010726802038549095,
+    "L6e": 0.006728384451439758,
+    "L6i": 0.005139646428462374,
+}
+cfg.unkcc1 = {
+    "L2e": 2.9003078243583347,
+    "L2i": 5.162627978681683,
+    "L4e": 5.060143706759098,
+    "L4i": 3.4421630020948286,
+    "L5e": 7.306905091131788,
+    "L5i": 1.6016563592554993,
+    "L6e": 3.070483105176143,
+    "L6i": 2.5419746302997566,
+}
+cfg.pmax = {
+    "L2e": 5090.568389284457,
+    "L2i": 4392.347665970014,
+    "L4e": 7010.1014895806475,
+    "L4i": 4076.953587990565,
+    "L5e": 5258.713071981389,
+    "L5i": 7070.669845884245,
+    "L6e": 9419.798954366586,
+    "L6i": 9050.513090329627,
+}
+cfg.gpas = {
+    "L2e": 6.183693542550501e-05,
+    "L2i": 2.6478580348538306e-05,
+    "L4e": 2.474426208575386e-05,
+    "L4i": 2.7062297576296835e-05,
+    "L5e": 4.010647009384075e-05,
+    "L5i": 5.412714996482607e-05,
+    "L6e": 3.5297701447167655e-05,
+    "L6i": 3.286565186740838e-05,
+}
 
-for k in ['gnabar', 'gkbar', 'ukcc2', 'unkcc1', 'pmax', 'gpas']:
-    setattr(cfg,k, getattr(cfg,k)[cfg.popOpt[0]])
-
-
+for k in ["gnabar", "gkbar", "ukcc2", "unkcc1", "pmax", "gpas"]:
+    setattr(cfg, k, getattr(cfg, k)[cfg.popOpt[0]])

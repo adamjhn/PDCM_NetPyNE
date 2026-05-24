@@ -2,11 +2,14 @@ import pandas as pd
 from sqlite3 import connect
 import json
 import numpy as np
+import sys
 
-simLabel = (
-    "cellFit6"  # "phase2_homeostasis" #"phase1_channels" #"newPumpFit3" #"weightsRate"
-)
-savepath = f"/tera/adam/data/{simLabel}"
+pop = sys.argv[1] if len(sys.argv) > 1 else "L2i"
+HOMEDIR = "/u/adam"  #'/ddn/adamjhn'
+DATADIR = "/tera/adam/data"  #'/ddn/adamjhn/data
+
+simLabel = f"phase2_wei_{pop}"  # "phase1_channels" #"newPumpFit3" #"weightsRate"
+savepath = f"{DATADIR}/{simLabel}"
 conn = connect(f"{savepath}/{simLabel}_storage.db")
 maxFitness = 1_000_000
 
@@ -35,8 +38,8 @@ rheobase = (Vth - Vreset) / R
 
 def batch_params():
     params = dict()
-    params["excWeight"] = [0, 5e-3]
-    params["inhWeightScale"] = [0.1, 10]
+    params[f"excWeight_{pop}"] = [0, 5e-3]
+    params[f"inhWeightScale_{pop}"] = [0.1, 10]
     params["gnabar"] = [1e-4, 1e-2]
     params["gkbar"] = [1e-4, 1e-2]
     params["ukcc2"] = [1e-6, 1]
@@ -95,30 +98,33 @@ def fitnessFunc(sd, **kwargs):
     return freqscore, rheobaseScore, rxdscore, o2score, vmin
 
 
-freqscores, rheobaseScores, rxdscores, o2scores, vmins = [], [], [], [], []
-for num in df["number"]:
-    try:
-        print(f"{savepath}/gen_{num}/trial_{num}_data.json")
-        data = json.load(open(f"{savepath}/gen_{num}/trial_{num}_data.json", "r"))
-    except FileNotFoundError:
-        freqscores.append(maxFitness)
-        rheobaseScores.append(maxFitness)
-        rxdscores.append(maxFitness)
-        o2scores.append(maxFitness)
-        vmins.append(0)
-        continue
-    sd = data["simData"]
-    f, r, rx, ox, v = fitnessFunc(sd)
-    freqscores.append(f)
-    rheobaseScores.append(r)
-    rxdscores.append(rx)
-    o2scores.append(ox)
-    vmins.append(v)
-df["freqScore"] = freqscores
-df["rheobaseScore"] = rheobaseScores
-df["rxdscore"] = rxdscores
-df["o2score"] = o2scores
-df["vmin"] = vmins
+def getScores():
+    freqscores, rheobaseScores, rxdscores, o2scores, vmins = [], [], [], [], []
+    for num in df["number"]:
+        try:
+            print(f"{savepath}/gen_{num}/trial_{num}_data.json")
+            data = json.load(open(f"{savepath}/gen_{num}/trial_{num}_data.json", "r"))
+        except FileNotFoundError:
+            freqscores.append(maxFitness)
+            rheobaseScores.append(maxFitness)
+            rxdscores.append(maxFitness)
+            o2scores.append(maxFitness)
+            vmins.append(0)
+            continue
+        sd = data["simData"]
+        f, r, rx, ox, v = fitnessFunc(sd)
+        freqscores.append(f)
+        rheobaseScores.append(r)
+        rxdscores.append(rx)
+        o2scores.append(ox)
+        vmins.append(v)
+    df["freqScore"] = freqscores
+    df["rheobaseScore"] = rheobaseScores
+    df["rxdscore"] = rxdscores
+    df["o2score"] = o2scores
+    df["vmin"] = vmins
+    return df
+
 
 # filter for reasonable (spiking) results
 # df = df[df['trial_value']<1].sort_values('trial_value')
@@ -127,3 +133,18 @@ df["vmin"] = vmins
 # print cfg (and results)
 # for k,v in df.iloc[idx].items():
 #    print(f"cfg.{k} = {v}")
+
+df = df.sort_values("trial_value")
+
+for k, v in df.iloc[0].items():
+    if "eight" in k:
+        print(f"cfg.{k} = {v}")
+    else:
+        print(f"cfg.{k}['{pop}'] = {v}")
+"""
+A = df.iloc[0:50]
+for k in A.columns:
+    good = [x for x in A[k] if x is not None]
+    if good != []:
+        print(f"\t\tparams['{k}'] = [0.75*{min(good):.4e}, 1.25*{max(good):.4e}]")
+"""
