@@ -11,6 +11,8 @@ import numpy as np
 import pickle
 import sys
 import traceback
+import json
+
 ############################################################
 #               Create network and run simulation
 ############################################################
@@ -37,26 +39,31 @@ def fi(cells):
                 * seg.taur_cadad
             )
 
+
 depolarized = []
 twice_depolarized = []
+
+
 def runFunc(t):
     global depolarized, twice_depolarized
 
     # give up after 200 ms if no APs
-    if t>=200 and len(sim.simData["spkid"]) == 0:
+    if t >= 200 and len(sim.simData["spkid"]) == 0:
         print("No spikes detected after 100 ms, stopping simulation.")
         h.t = sim.cfg.duration
 
     # give up after >= 300ms if a cell is >-10 mV for 3 time checks in a row
     for cell in sim.net.cells:
-        if cell.tags['cellModel'] != "VecStim" and cell.tags['cellModel'] != "NetStim":
-            if cell.secs['soma']['hObj'].v > -10:
+        if cell.tags["cellModel"] != "VecStim" and cell.tags["cellModel"] != "NetStim":
+            if cell.secs["soma"]["hObj"].v > -10:
                 if cell.gid not in depolarized:
                     depolarized.append(cell.gid)
                 elif cell.gid not in twice_depolarized:
                     twice_depolarized.append(cell.gid)
                 else:
-                    print(f"Cell {cell.gid} is depolarized above -10 mV for an extended period, stopping simulation.")
+                    print(
+                        f"Cell {cell.gid} is depolarized above -10 mV for an extended period, stopping simulation."
+                    )
                     h.t = sim.cfg.duration
             else:
                 if cell.gid in depolarized:
@@ -64,70 +71,86 @@ def runFunc(t):
                 if cell.gid in twice_depolarized:
                     twice_depolarized.remove(cell.gid)
 
+
 try:
     simConfig, netParams = sim.readCmdLineArgs(
         simConfigDefault="cfgPopOpt.py", netParamsDefault="netParamsPopOpt.py"
     )
-    sim.initialize(
-        simConfig=simConfig, netParams=netParams
-    )  # create network object and set cfg and net params
-    sim.net.createPops()  # instantiate network populations
-    sim.net.createCells()  # instantiate network cells based on defined populations
-    sim.net.addStims()  # add network stimulation
-    # fih = h.FInitializeHandler(2, lambda: fi(sim.net.cells))
-    sim.net.addRxD(nthreads=2)
-    
-    clamps = []
-    for cell in sim.net.cells:
-        if cell.tags['cellModel'] != "VecStim" and cell.tags['cellModel'] != "NetStim":
-            vclamp = h.VClamp(cell.secs['soma']['hObj'](0.5))
-            vclamp.dur[0] = 25
-            vclamp.dur[1] = 0
-            vclamp.dur[2] = 0
-            vclamp.amp[0] = -70
-            clamps.append(vclamp)
-    
-    
-    """
-    df = pd.read_json('PDMCExample.json')
-    
-    L = list(df.columns)
-    N_Full = np.array([len(df[pop]['cellGids']) for pop in L])
-    counts = {pop:0 for pop in L}
-    for gid in range(N_Full).sum()):
-        cell = sim.cellByGid(gid)
-        pop = cell.tags['cellType']
-        idx = counts[pop]
-        counts[pop] += 1
-        inp = df[pop]['inputs'][idx]
-        typ = df[pop]['mech'][idx]
-        excVec = h.Vector([t for t,m in zip(inp,typ) if typ == 'exc'])
-        inhVec = h.Vector([t for t,m in zip(inp,typ) if typ == 'inh'])
-    """
-    sim.net.connectCells()  # create connections between cells based on params
-    sim.setupRecording()  # setup variables to record for each cell (spikes, V traces, etc)
-    
-    # extra recording
-    """
-    for sp in rxd.species._all_defined_species:
-        if sp().name == 'mgate':
-            mgate = sp()
-        elif sp().name == 'hgate':
-            hgate = sp()
-        elif sp().name == 'ngate':
-            ngate = sp()
-    extraRec = {}
-    for cellName in sim.cfg.recordCells:
-        dat = {}
-        cell = sim.getCellsList(include=[cellName])[0]
-        dat['mgate'] = h.Vector().record(mgate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
-        dat['hgate'] = h.Vector().record(hgate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
-        dat['ngate'] = h.Vector().record(ngate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
-        extraRec[cellName] = dat
-    """ 
-    sim.runSimWithIntervalFunc(100, runFunc)
+    for loop in range(20):
+        sim.clearAll()
+        netParamsModule = sim.loadPythonModule("netParamsPopOpt.py")
+        netParams = netParamsModule.netParams
+        sim.initialize(
+            simConfig=simConfig, netParams=netParams
+        )  # create network object and set cfg and net params
+        sim.net.createPops()  # instantiate network populations
+        sim.net.createCells()  # instantiate network cells based on defined populations
+        sim.net.addStims()  # add network stimulation
+        # fih = h.FInitializeHandler(2, lambda: fi(sim.net.cells))
+        sim.net.addRxD(nthreads=2)
+        vrecs = []
+        for cell in sim.net.cells:
+            if (
+                cell.tags["cellModel"] != "VecStim"
+                and cell.tags["cellModel"] != "NetStim"
+            ):
+                vrecs.append(
+                    h.Vector().record(cell.secs["soma"]["hObj"](0.5)._ref_v, 0.1)
+                )
 
-    sim.gatherData()  # gather spiking data and cell info from each node
+        json.dump(
+            sim.net.rxd.constants, open(f"{sim.cfg.saveFolder}/constants.json", "w")
+        )
+        clamps = []
+        for cell in sim.net.cells:
+            if (
+                cell.tags["cellModel"] != "VecStim"
+                and cell.tags["cellModel"] != "NetStim"
+            ):
+                vclamp = h.VClamp(cell.secs["soma"]["hObj"](0.5))
+                vclamp.dur[0] = 25
+                vclamp.dur[1] = 0
+                vclamp.dur[2] = 0
+                vclamp.amp[0] = cfg.hParams["v_init"]
+                clamps.append(vclamp)
+
+        sim.net.connectCells()  # create connections between cells based on params
+        sim.setupRecording()  # setup variables to record for each cell (spikes, V traces, etc)
+
+        # extra recording
+        """
+        for sp in rxd.species._all_defined_species:
+            if sp().name == 'mgate':
+                mgate = sp()
+            elif sp().name == 'hgate':
+                hgate = sp()
+            elif sp().name == 'ngate':
+                ngate = sp()
+        extraRec = {}
+        for cellName in sim.cfg.recordCells:
+             dat = {}
+            cell = sim.getCellsList(include=[cellName])[0]
+            dat['mgate'] = h.Vector().record(mgate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
+            dat['hgate'] = h.Vector().record(hgate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
+            dat['ngate'] = h.Vector().record(ngate.nodes(cell.secs['soma']['hObj'])._ref_value, sim.cfg.recordStep)
+            extraRec[cellName] = dat
+        """
+        sim.runSimWithIntervalFunc(100, runFunc)
+
+        sim.gatherData()  # gather spiking data and cell info from each node
+        vrecs = [np.array(v[-1000:].to_python()) for v in vrecs]
+        # ignore spikes
+        vinit = np.nanmean([vec[vec < -30].mean() for vec in vrecs])
+        if not np.isnan(vinit):
+            print(f'Update v_init {cfg.hParams["v_init"]} -> {vinit}')
+            deltaV = cfg.hParams["v_init"] - vinit
+            cfg.hParams["v_init"] = (cfg.hParams["v_init"] + vinit) / 2
+            if abs(deltaV) < 1e-4:
+                break
+        else:
+            break
+        if len(sim.allSimData["spkid"]) == 0:
+            break
     sim.saveData()  # save params, cell info and sim output to file (pickle,mat,txt,etc)#
 
 except Exception:
@@ -140,7 +163,7 @@ finally:
 
 # sim.analysis.plotData()               # plot spike raster etc
 
-#pickle.dump(extraRec, open(f"{sim.cfg.saveFolder}/extraRec.pkl",'wb'))
+# pickle.dump(extraRec, open(f"{sim.cfg.saveFolder}/extraRec.pkl",'wb'))
 
 # # Plot all electrodes separately; use electrode 6
 # for elec in [3]: #range(15):

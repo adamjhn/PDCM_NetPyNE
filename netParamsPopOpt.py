@@ -10,10 +10,12 @@ Modified to include concentration of Na, K, Cl and O2 using RxD.
 from netpyne import specs
 import numpy as np
 from neuron.units import sec, mM, M, s, um
+from neuron import h
 import math
 import json
 import pickle
 import re
+
 
 def rand_uniform(gid=0):
     r = h.Random()
@@ -64,19 +66,21 @@ netParams = (
 # population locations
 # from Schmidt et al 2018, PLoS Comp Bio, Macaque V1
 netParams.sizeX = cfg.sizeX  # x-dimension (horizontal length) size in um
-netParams.sizeY = cfg.sizeY  # y-dimension (vertical height or cortical depth) size in um
+netParams.sizeY = (
+    cfg.sizeY
+)  # y-dimension (vertical height or cortical depth) size in um
 netParams.sizeZ = cfg.sizeZ  # z-dimension (horizontal depth) size in um
 netParams.shape = "cylinder"  # cylindrical (column-like) volume
 
 popDepths = {
-    'L2e':[0.08, 0.27],
-    'L2i':[0.08, 0.27],
-    'L4e':[0.27, 0.58],
-    'L4i':[0.27, 0.58],
-    'L5e':[0.58, 0.73],
-    'L5i':[0.58, 0.73],
-    'L6e':[0.73, 1.0],
-    'L6i':[0.73, 1.0],
+    "L2e": [0.08, 0.27],
+    "L2i": [0.08, 0.27],
+    "L4e": [0.27, 0.58],
+    "L4i": [0.27, 0.58],
+    "L5e": [0.58, 0.73],
+    "L5i": [0.58, 0.73],
+    "L6e": [0.73, 1.0],
+    "L6i": [0.73, 1.0],
 }
 
 # cell property rules -- single compartment model from population SD model
@@ -128,7 +132,7 @@ Vreset = -65 (mV) : -49 (mV) :
 #Fixed firing threshold
 Vteta  = -50 (mV)"""
 # Membrane capacity
-C_m = cfg.Cm / (2e-8 * np.pi * cfg.somaR ** 2)  # pF
+C_m = cfg.Cm / (2e-8 * np.pi * cfg.somaR**2)  # pF
 # Mean amplitude of the postsynaptic potential (in mV).
 w_v = 0.15
 # Mean amplitude of the postsynaptic potential (in pA).
@@ -188,7 +192,7 @@ netParams.delayMin_e = 1.5
 netParams.ddelay = 0.5
 netParams.delayMin_i = 0.75
 netParams.weightMin = cfg.weightMin
-netParams.dweight = cfg.dWeight 
+netParams.dweight = cfg.dWeight
 
 # cell property rules
 for pop in L:
@@ -203,18 +207,21 @@ for pop in L:
 # ------------------------------------------------------------------------------
 # create populations
 all_cells = []
-for pop,count in zip(L,N_):
+for pop, count in zip(L, N_):
     for idx in range(count):
-        if 'L2' in pop:
+        if "L2" in pop:
             netParams.popParams[f"{pop}_{idx}"] = {
                 "cellType": pop,
                 "numCells": 1,
                 "cellModel": pop,
                 "xRange": [0.0, cfg.sizeX],
-                "yRange": [popDepths[pop][0] * cfg.sizeY, cfg.sizeY * popDepths[pop][1]],
+                "yRange": [
+                    popDepths[pop][0] * cfg.sizeY,
+                    cfg.sizeY * popDepths[pop][1],
+                ],
                 "zRange": [0.0, cfg.sizeZ],
             }
-        elif 'L6' in pop:
+        elif "L6" in pop:
             netParams.popParams[f"{pop}_{idx}"] = {
                 "cellType": pop,
                 "numCells": 1,
@@ -232,27 +239,31 @@ for pop,count in zip(L,N_):
                 "numCells": 1,
                 "cellModel": pop,
                 "xRange": [0.0, cfg.sizeX],
-                "yRange": [popDepths[pop][0] * cfg.sizeY, cfg.sizeY * popDepths[pop][1]],
+                "yRange": [
+                    popDepths[pop][0] * cfg.sizeY,
+                    cfg.sizeY * popDepths[pop][1],
+                ],
                 "zRange": [0.0, cfg.sizeZ],
             }
         all_cells.append(f"{pop}_{idx}")
+
 
 ############################################################
 # Connectivity parameters
 ############################################################
 def filterTimes(inputs, weights, offset=-1, thresh=1e-9):
-    """ sum inputs that are less than `thresh` apart and shift by `offset`
-        The offset allows for non-zero delay when replaying the inputs.
-    """ 
-    inp = [max(0,inputs[0] + offset)]   # start with the first input
+    """sum inputs that are less than `thresh` apart and shift by `offset`
+    The offset allows for non-zero delay when replaying the inputs.
+    """
+    inp = [max(0, inputs[0] + offset)]  # start with the first input
     wei = [weights[0]]
     for t, w in zip(inputs[1:], weights[1:]):
-        tnext = max(0,t + offset)       # time of next input
+        tnext = max(0, t + offset)  # time of next input
         if tnext - inp[-1] > thresh:
-            inp.append(tnext)           # add next input
+            inp.append(tnext)  # add next input
             wei.append(w)
         else:
-            wei[-1] += w        # keep current input -- but update weight
+            wei[-1] += w  # keep current input -- but update weight
         # stop if input time exceeds duration
         if inp[-1] >= cfg.duration:
             break
@@ -288,7 +299,7 @@ for pop, sz in zip(L, N_Full):
             netParams.connParams[f"conn_{pop}_{idx}_{syn}"] = {
                 "preConds": {"pop": f"vec_{pop}_{idx}_{syn}"},
                 "postConds": {"pop": f"{pop}_{idx}"},
-                'probability': 1.0,
+                "probability": 1.0,
                 "weight": weightScale,  # synaptic weight
                 "delay": 1,
                 "synMech": syn,
@@ -320,8 +331,8 @@ constants = {
     "vtau": 1 / 250.0,
     "g_gliamax": 5 * mM / sec,
     "beta0": 7.0,
-    "avo": 6.0221409 * (10 ** 23),
-    "p_max": cfg.pmax /um**2,
+    "avo": 6.0221409 * (10**23),
+    "p_max": cfg.pmax / um**2,
     "nao_initial": 144.0,
     "nai_initial": 18.0,
     "gnai_initial": 18.0,
@@ -337,43 +348,44 @@ constants = {
     "o2_bath": cfg.o2_bath,
     "o2_init": cfg.o2_init,
     "v_initial": cfg.hParams["v_init"],
+    "pumpScale": cfg.pumpScale,
 }
 
 # Pump model
 
-# ADP[cyt] is the total ADP (D2 is MgADP, D1 is free ADP) 
-AKb = f"{1/cfg.AK['KMg']} + ADP[cyt] + {cfg.Mg}" 
+# ADP[cyt] is the total ADP (D2 is MgADP, D1 is free ADP)
+AKb = f"{1/cfg.AK['KMg']} + ADP[cyt] + {cfg.Mg}"
 D2 = f"({AKb} - (({AKb})**2 - ADP[cyt] * {4*cfg.Mg})**0.5)/2"
 D1 = f"(ADP[cyt] - ({D2}))"
 
 
 q10 = 3.2
-F=96485.33212331001
-R=8.31446261815324
-T=cfg.hParams["celsius"] + 273.15
+F = 96485.33212331001
+R = 8.31446261815324
+T = cfg.hParams["celsius"] + 273.15
 Tref = 310
-q10_factor = q10**((T - Tref)/10.0)
+q10_factor = q10 ** ((T - Tref) / 10.0)
 Delta = -0.031
 # parameters
-k1p = 1050/s * q10_factor
-k1m = 172.1/s/mM * q10_factor
-k2p = 481/s * q10_factor
-k2m = 40/s * q10_factor
-k3p = 2000/s * q10_factor
-k3m = 79.3e3/s/mM**2 * q10_factor
-k4p = 320/s * q10_factor
-k4m = 40/s * q10_factor
-KATP = 2.51*mM 
-KHPi = 6.77*mM
-KKPi = 292*mM
-KNaPi = 224*mM
-#MgATP = 9.8
-#MgADP = 0.05
+k1p = 1050 / s * q10_factor
+k1m = 172.1 / s / mM * q10_factor
+k2p = 481 / s * q10_factor
+k2m = 40 / s * q10_factor
+k3p = 2000 / s * q10_factor
+k3m = 79.3e3 / s / mM**2 * q10_factor
+k4p = 320 / s * q10_factor
+k4m = 40 / s * q10_factor
+KATP = 2.51 * mM
+KHPi = 6.77 * mM
+KKPi = 292 * mM
+KNaPi = 224 * mM
+# MgATP = 9.8
+# MgADP = 0.05
 pH = 7.0
-PiT = 4.2*mM
+PiT = 4.2 * mM
 
-KKe = 0.213*mM
-KKi = 0.5*mM
+KKe = 0.213 * mM
+KKi = 0.5 * mM
 KNae = f"({15.5*mM} * rxd.rxdmath.exp({(1+Delta)*F*1e-3/(3*R*T)}*rxd.v))"
 KNai = f"({2.49*mM} * rxd.rxdmath.exp({Delta*F*1e-3/(3*R*T)}*rxd.v))"
 
@@ -383,17 +395,17 @@ Nae = f"(nao[ecs]/{KNae})"
 Ki = f"(kki[cyt]/{KKi})"
 Ke = f"(kko[ecs]/{KKe})"
 eATP = f"ATP[cyt]/{KATP}"
-H = 10**(-pH)*M 
+H = 10 ** (-pH) * M
 Pi = f"{PiT}/(kki[cyt]/{KKPi} + {1 + H/KHPi} + nai[cyt]/{KNaPi})"
-a1p = f"{k1p}*{Nai}**3/((1+{Nai})**3 + (1+{Ki})**2 - 1)"    #/ms
-a2p = k2p                                                   #/ms
-a3p = f"{k3p}*{Ke}**2/((1+{Nae})**3 + (1+{Ke})**2 - 1)"     #/ms    
-a4p = f"{k4p}*{eATP}/(1+{eATP})"                            #/ms
+a1p = f"{k1p}*{Nai}**3/((1+{Nai})**3 + (1+{Ki})**2 - 1)"  # /ms
+a2p = k2p  # /ms
+a3p = f"{k3p}*{Ke}**2/((1+{Nae})**3 + (1+{Ke})**2 - 1)"  # /ms
+a4p = f"{k4p}*{eATP}/(1+{eATP})"  # /ms
 
-a1m = f"{k1m}*({D2})"                                       #/ms
-a2m = f"{k2m}*{Nae}**3/((1+{Nae})**3 + (1+{Ke})**2 - 1)"    #/ms
-a3m = f"{k3m}*{Pi}*{H}/(1+{eATP})"                          #/ms
-a4m = f"{k4m}*{Ki}**2/((1+{Nai})**3 + (1+{Ki})**2 - 1)"     #/ms
+a1m = f"{k1m}*({D2})"  # /ms
+a2m = f"{k2m}*{Nae}**3/((1+{Nae})**3 + (1+{Ke})**2 - 1)"  # /ms
+a3m = f"{k3m}*{Pi}*{H}/(1+{eATP})"  # /ms
+a4m = f"{k4m}*{Ki}**2/((1+{Nai})**3 + (1+{Ki})**2 - 1)"  # /ms
 Sigma = f"""{a3m}*{a2m}*{a1m} +
             {a4p}*{a2m}*{a1m} +
             {a4p}*{a2p}*{a3p} +
@@ -409,15 +421,16 @@ Sigma = f"""{a3m}*{a2m}*{a1m} +
             {a4m}*{a3m}*{a2m} + 
             {a4m}*{a1m}*{a2m} +
             {a4m}*{a2p}*{a3p} +
-            {a4m}*{a1m}*{a3p}"""        #/ms**3
-Sigma = re.sub(r'\s+', ' ', Sigma)
+            {a4m}*{a1m}*{a3p}"""  # /ms**3
+Sigma = re.sub(r"\s+", " ", Sigma)
 
-# each pump cycle 
+# each pump cycle
 # ATP + 3Nai + 2Ke <> ADP + Pi + 3Nae + 2Ki
 # Here ATP is produced by consuming O2, ADP and Pi
 #      ADP is restored towards a SS concentration
 #      P   is restored towards a SS concetration
-pumpRate = f"p_max * ({a1p}*{a2p}*{a3p}*{a4p} -{a1m}*{a2m}*{a3m}*{a4m})/({Sigma})"      #/ms
+pumpRate = f"p_max * pumpScale *({a1p}*{a2p}*{a3p}*{a4p} -{a1m}*{a2m}*{a3m}*{a4m})/({Sigma})"  # /ms
+
 
 # sodium activation 'm'
 alpha_m = "(0.32 * (rxd.v + 54.0))/(1.0 - rxd.rxdmath.exp(-(rxd.v + 54.0)/4.0))"
@@ -469,15 +482,15 @@ o2cyt = "oxygeni[cyt]"
 # currents were scaled by 32/0.05 = 640 mg/L/mM
 rescale_o2 = 32 * 20
 
-#switches used to avoid concentration becoming negative
+# switches used to avoid concentration becoming negative
 o2switch = "((1.0 + rxd.rxdmath.tanh(1e5 * (%s - 5e-4))) / 2.0)" % (o2cyt)
 ATPswitch = "((1.0 + rxd.rxdmath.tanh(1e5 * (ATP[cyt] - 5e-4))) / 2.0)"
 ADPswitch = "((1.0 + rxd.rxdmath.tanh(1e5 * (ADP[cyt] - 5e-4))) / 2.0)"
 AMPswitch = "((1.0 + rxd.rxdmath.tanh(1e5 * (AMP[cyt] - 5e-4))) / 2.0)"
 PosSwitch = "((1.0 + rxd.rxdmath.tanh(1e5 * (Pos[cyt] - 5e-4))) / 2.0)"
 
-avo = 6.0221409 * (10 ** 23)
-volume_scale = 1e-18 * avo / cfg.sa2v # convert mM/ms -> mol/um**2/ms
+avo = 6.0221409 * (10**23)
+volume_scale = 1e-18 * avo / cfg.sa2v  # convert mM/ms -> mol/um**2/ms
 osm = "(1.1029 - 0.1029*rxd.rxdmath.exp( ( (nao[ecs] + kko[ecs] + clo[ecs] + 18.0)/vol_ratio[ecs] - (nai[cyt] + kki[cyt] + cli[cyt] + cli[cyt] + 132.0)/vol_ratio[cyt])/20.0))"
 scalei = str(avo * 1e-18)
 scaleo = str(avo * 1e-18)
@@ -485,7 +498,7 @@ scaleo = str(avo * 1e-18)
 # ATP synthase kinetics with Michaelis-Menten terms for all substrates
 # Km values: PMC3833997 (KmADP=0.025mM), PMC8434986 (KmPi=1.0mM), Ko2=0.3μM (cytochrome c oxidase)
 # Physiological ATP turnover: 0.516 uM/ms in grey matter (PMC12415541), 0.015 mM/s basal
-Vatp  = f"{o2switch} * {ADPswitch} * {PosSwitch} * "
+Vatp = f"{o2switch} * {ADPswitch} * {PosSwitch} * "
 Vatp += f"(ADP[cyt]/(ADP[cyt] + {cfg.KmADP_synthase})) * "
 Vatp += f"(Pos[cyt]/(Pos[cyt] + {cfg.KmPi_synthase})) * "
 Vatp += f"({o2cyt}/({cfg.Ko2} + {o2cyt})) * "
@@ -498,6 +511,7 @@ evalInit = {
     "vol_ratio[cyt]": "1.0",
     "rxd.rxdmath": "math",
     "rxd.v": constants["v_initial"],
+    "pumpScale": constants["pumpScale"],
     "kki[cyt]": constants["ki_initial"],
     "kko[ecs]": constants["ko_initial"],
     "nai[cyt]": constants["nai_initial"],
@@ -522,6 +536,14 @@ def initEval(ratestr):
     for k, v in constants.items():
         ratestr = ratestr.replace(k, str(v))
     return eval(ratestr)
+
+
+# fix the pump rate at the original voltage
+constants["pumpScale"] = initEval(pumpRate.replace("rxd.v", "(-70)")) / initEval(
+    pumpRate
+)
+evalInit["pumpScale"] = constants["pumpScale"]
+
 # check pump can balance K+ currents at rest with min leak 1e-5 mS/cm^2
 min_pmax = f"p_max * ({volume_scale}*({nkcc1} + {kcc2}) + {gk} * (v_initial - {ek}))/(2*{pumpRate})"
 min_leak = initEval(f"1e-5*p_max*{scale}*(v_initial - {ek})/((2*{pumpRate}))")
@@ -533,16 +555,21 @@ if constants["p_max"] < pmin + min_leak:
 
 
 # scale by area(um**2)/(N_A * volume(m**3) * vol_fraction) to give cyt mM/ms
-Prescale = 4*np.pi*cfg.somaR**2/(1e-18*avo*2*np.pi*cfg.somaR**3*cfg.cyt_fraction)
-pr = initEval(pumpRate)*Prescale # cyt mM/ms ATP->ADP + Pos
+Prescale = (
+    4
+    * np.pi
+    * cfg.somaR**2
+    / (1e-18 * avo * 2 * np.pi * cfg.somaR**3 * cfg.cyt_fraction)
+)
+pr = initEval(pumpRate) * Prescale  # cyt mM/ms ATP->ADP + Pos
 print(f"Pump ATP consumption = {pr:.6e} mM/ms")
 print(f"Basal ATP consumption = {pr/2:.6e} mM/ms")
 print(f"Total ATP consumption = {1.5*pr:.6e} mM/ms")
 
-VBasalATP = pr/2
-Vmax_ATPsyth = (1.5*pr)/(5*initEval(Vatp))
+VBasalATP = pr / 2
+Vmax_ATPsyth = (1.5 * pr) / (5 * initEval(Vatp))
 print(f"Vmax_ATPsynthase = {Vmax_ATPsyth:.6e} mM/ms")
-Vatp_rate = 5*Vmax_ATPsyth*initEval(Vatp)
+Vatp_rate = 5 * Vmax_ATPsyth * initEval(Vatp)
 print(f"ATP production rate = {Vatp_rate:.6e} mM/ms")
 
 # forward rate
@@ -563,7 +590,9 @@ print(f"\nAdenylate kinase at steady state:")
 print(f"  Forward rate (2*ADP → ATP+AMP) = {ADK_forward_rate:.6e} mM/ms")
 print(f"  Backward rate (ATP+AMP → 2*ADP) = {ADK_backward_rate:.6e} mM/ms")
 print(f"  Net rate = {ADK_forward_rate - ADK_backward_rate:.6e} mM/ms")
-print(f"  Equilibrium constant Keq = [ATP][AMP]/[ADP]² = {constants['ATP_initial']*constants['AMP_initial']/constants['ADP_initial']**2:.3f}")
+print(
+    f"  Equilibrium constant Keq = [ATP][AMP]/[ADP]² = {constants['ATP_initial']*constants['AMP_initial']/constants['ADP_initial']**2:.3f}"
+)
 
 # Verify steady state balance
 print(f"\nSteady-state verification:")
@@ -589,8 +618,8 @@ nabalance = f"({gna} * (v_initial - {ena}) + ({nkcc1}*{volume_scale} + 3.0 * {pu
 Kchan0 = initEval(f"{gk} * (v_initial - {ek})")
 Knkcc10 = initEval(f"{volume_scale} * {nkcc1}")
 Kkcc20 = initEval(f"{volume_scale} * {kcc2}")
-Knakpump0 = -2*initEval(pumpRate)
-Kleak0 = initEval(kbalance)*initEval(f"(v_initial - {ek})")
+Knakpump0 = -2 * initEval(pumpRate)
+Kleak0 = initEval(kbalance) * initEval(f"(v_initial - {ek})")
 Ktot = Kchan0 + Knkcc10 + Kkcc20 + Knakpump0 + Kleak0
 
 
@@ -598,11 +627,12 @@ constants["gclbar_l"] = initEval(clbalance)
 constants["gkbar_l"] = cfg.gkleak_scale * initEval(kbalance)
 constants["gnabar_l"] = initEval(nabalance)
 
-if constants["gkbar_l"] < 0:
-    if abs(constants["gkbar_l"])< 1e-9:
-        constants["gkbar_l"] = 0
-    else:
-        raise Exception(f"Negative leak gkbar_l: {constants['gkbar_l']}")
+for leak in ["gkbar_l", "gnabar_l", "gclbar_l"]:
+    if constants[leak] < 0:
+        if abs(constants[leak]) < 1e-9:
+            constants[leak] = 0
+        else:
+            raise Exception(f"Negative leak {leak}: {constants[leak]}")
 netParams.rxdParams["constants"] = constants
 
 ### regions
@@ -714,11 +744,11 @@ netParams.rxdParams["states"] = {
     "hgate": {"regions": ["mem"], "initial": h_initial, "name": "hgate"},
     "ngate": {"regions": ["mem"], "initial": n_initial, "name": "ngate"},
     "o2_consumed": {"regions": ["ecs"], "initial": 0, "name": "o2_consumed"},
-    "ATP": {"regions":["cyt"], "initial": constants["ATP_initial"], "name": "ATP"},
-    "ADP": {"regions":["cyt"], "initial": constants["ADP_initial"], "name": "ADP"},
-    "AMP": {"regions":["cyt"], "initial": constants["AMP_initial"], "name": "AMP"},
-    "Pos": {"regions":["cyt"], "initial": constants["Pos_initial"], "name": "Pos"},
-    "oxygeni": {"regions":["cyt"], "initial": constants["o2_init"], "name": "oxygeni"},
+    "ATP": {"regions": ["cyt"], "initial": constants["ATP_initial"], "name": "ATP"},
+    "ADP": {"regions": ["cyt"], "initial": constants["ADP_initial"], "name": "ADP"},
+    "AMP": {"regions": ["cyt"], "initial": constants["AMP_initial"], "name": "AMP"},
+    "Pos": {"regions": ["cyt"], "initial": constants["Pos_initial"], "name": "Pos"},
+    "oxygeni": {"regions": ["cyt"], "initial": constants["o2_init"], "name": "oxygeni"},
 }
 
 ### reactions
@@ -865,7 +895,7 @@ mcReactions["pump_current_others"] = {
 # assumed o2 in cyt (mM) == o2 in ecs (mM) due to rapid flux across the membrane (~42cm/s == 420um/ms)
 mcReactions["O2Flux"] = {
     "reactant": f"{o2ecs}",
-    "product": f"{o2cyt}", 
+    "product": f"{o2cyt}",
     "rate_f": f"420e18 *({o2ecs} - {o2cyt})",
     "membrane": "mem",
     "custom_dynamics": True,
@@ -874,7 +904,7 @@ mcReactions["O2Flux"] = {
 
 mcReactions["O2Consumed"] = {
     "reactant": "dump[cyt]",
-    "product": "o2_consumed[ecs]", 
+    "product": "o2_consumed[ecs]",
     "rate_f": f"420e18 *({o2ecs} - {o2cyt})",
     "membrane": "mem",
     "custom_dynamics": True,
@@ -895,21 +925,21 @@ reactions["glia_oxygen"] = {
 """
 reactions["ATPRestore"] = {
     "reactant": f"5*ADP[cyt] + 5*Pos[cyt] + {o2cyt}",
-    "product": f"5*ATP[cyt]", 
+    "product": f"5*ATP[cyt]",
     "rate_f": Vatp,
     "custom_dynamics": True,
 }
 reactions["BasalATP"] = {
     "reactant": f"ATP",
-    "product": f"ADP[cyt] + Pos[cyt]", 
+    "product": f"ADP[cyt] + Pos[cyt]",
     "rate_f": VBasalATP,
     "custom_dynamics": True,
 }
 reactions["adenylateKinase"] = {
     "reactant": "AMP[cyt] + ATP[cyt]",
     "product": "2*ADP[cyt]",
-    "rate_f" : f"{AMPswitch} * {ATPswitch} * {fnum}/{fden}",
-    "rate_b" : f"{ADPswitch} * {bnum}/{bden}",
+    "rate_f": f"{AMPswitch} * {ATPswitch} * {fnum}/{fden}",
+    "rate_b": f"{ADPswitch} * {bnum}/{bden}",
     "custom_dynamics": True,
 }
 netParams.rxdParams["reactions"] = reactions

@@ -27,11 +27,11 @@ cfg.duration = 1000  # Duration of the simulation, in ms
 cfg.dt = 0.025  # Internal integration timestep to use
 cfg.verbose = False  # Show detailed messages
 cfg.seeds["m"] = 123
-cfg.popOpt = ['L2e']
+cfg.popOpt = ["L2e"]
 cfg.printPopAvgRates = False
-cfg.hParams["celsius"] = 34
+cfg.hParams["celsius"] = 37
 cfg.hParams["v_init"] = -70
-cfg.cvode_active = False 
+cfg.cvode_active = False
 # scaling factors
 cfg.poissonRateFactor = 1.0
 cfg.connected = True
@@ -42,16 +42,16 @@ cfg.random123 = True
 
 # Size of Network. Adjust this constants, please!
 cfg.ScaleFactor = 0.16  # 1.0 = 80.000
-cfg.scaleConnWeightNetStims = 1 
+cfg.scaleConnWeightNetStims = 1
 cfg.scaleConnWeightNetStimStd = 1
 
 # set the following 3 options to False when running large-scale versions of the model (>50% scale) to save memory
-cfg.saveCellSecs = True 
+cfg.saveCellSecs = True
 cfg.saveCellConns = True
 cfg.createPyStruct = True
 cfg.printPopAvgRates = True
 cfg.singleCells = False  # create one cell in each population
-cfg.printRunTime = False 
+cfg.printRunTime = False
 cfg.Kceil = 15.0
 cfg.nRec = 25
 cfg.cellPops = [
@@ -65,9 +65,7 @@ cfg.cellPops = [
     "L6i",
 ]  # record only spikes of cells (not ext stims)
 cfg.cellPopsInit = (-85, -60)
-cfg.recordCellsSpikes = [
-    f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)
-]
+cfg.recordCellsSpikes = [f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)]
 
 if cfg.recordStim:
     cfg.recordCellsSpikes += [
@@ -75,16 +73,26 @@ if cfg.recordStim:
     ]
     cfg.recordCellsSpikes += [f"bkg_THL{i}{ei}" for i in [4, 6] for ei in ["e", "i"]]
 
-#cfg.recordCells = [
+# cfg.recordCells = [
 #    (f"L{i}{ei}", idx) for i in [2, 4, 5, 6] for ei in ["e", "i"] for idx in range(10)
-#]
+# ]
 
-cfg.recordCells = [
-    f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)
-]
+cfg.recordCells = [f"{pop}_{idx}" for pop in cfg.popOpt for idx in range(10)]
 cfg.recordTraces = {
     f"{var}_soma": {"sec": "soma", "loc": 0.5, "var": var}
-    for var in ["v", "nai", "ki", "cli", "o2_consumedo", 'oxygeno', 'oxygenii','ATPi', 'ADPi', 'AMPi','Posi']
+    for var in [
+        "v",
+        "nai",
+        "ki",
+        "cli",
+        "o2_consumedo",
+        "oxygeno",
+        "oxygenii",
+        "ATPi",
+        "ADPi",
+        "AMPi",
+        "Posi",
+    ]
 }
 """
 cfg.recordTraces["exc_i"] = {"sec":'soma', "loc":0.5, "synMech":"exc", "var":"i", 'index':0}
@@ -103,7 +111,7 @@ cfg.seeds = {
 }
 # Network dimensions
 cfg.sizeX = 700  # 250.0 #1000
-cfg.sizeY = 2131.2851 #1470.0  # 250.0 #1000
+cfg.sizeY = 2131.2851  # 1470.0  # 250.0 #1000
 cfg.sizeZ = 700  # 200.0
 cfg.dx = 700
 cfg.Vtissue = cfg.sizeX * cfg.sizeY * cfg.sizeZ
@@ -116,24 +124,28 @@ cfg.alpha_ecs = 0.2
 cfg.tort_ecs = 1.6
 cfg.o2drive = 0.013
 cfg.ox = "perfused"
-cfg.ATPss = 3.18 #mM PMC3524514 -- whole brain
-cfg.ATPDc = 0.445 #um**2/ms
-cfg.Ko2 = 0.3e-3 #mM  # Km for O2 at cytochrome c oxidase
+cfg.ATPss = 3.18  # mM PMC3524514 -- whole brain
+cfg.ATPDc = 0.445  # um**2/ms
+cfg.Ko2 = 0.3e-3  # mM  # Km for O2 at cytochrome c oxidase
 cfg.KmADP_synthase = 0.025  # mM, from PMC3833997 (human skeletal muscle)
-cfg.KmPi_synthase = 1.0     # mM, from PMC8434986 (cardiac tissue)
-cfg.KiATP_synthase = 10.0   # mM, competitive inhibition constant for ATP (allows steady-state flux)
-cfg.ADPss = 0.0944444444444444 # such that D2 (MgADP == 0.05 mM)
+cfg.KmPi_synthase = 1.0  # mM, from PMC8434986 (cardiac tissue)
+cfg.KiATP_synthase = (
+    10.0  # mM, competitive inhibition constant for ATP (allows steady-state flux)
+)
+cfg.ADPss = 0.0944444444444444  # such that D2 (MgADP == 0.05 mM)
 cfg.tauADP = 1
 cfg.Pss = 4.2
 cfg.tauP = 1
-cfg.ATPase_basal_density = 0.05 # mM/ms
+cfg.ATPase_basal_density = 0.05  # mM/ms
 
 # Adenylate kinase equilibrium: 2*ADP <-> ATP + AMP
 # At equilibrium: Keq = [ATP][AMP]/[ADP]^2 ≈ 1 (typical for adenylate kinase)
 # Solving: AMP = Keq * ADP^2 / ATP = 1.0 * (0.05)^2 / 2.59 ≈ 0.001 mM
 # Solving adenylateKinase rate_f == rate_b at steady-state gives exact value.
-cfg.AMPss = 0.0692795435459248 # mM, from adenylate kinase equilibrium with ADPss and ATPss
-cfg.Mg = 0.5 #mM (free Mg) https://doi.org/10.3390/ijms20143439
+cfg.AMPss = (
+    0.0692795435459248  # mM, from adenylate kinase equilibrium with ADPss and ATPss
+)
+cfg.Mg = 0.5  # mM (free Mg) https://doi.org/10.3390/ijms20143439
 
 
 cfg.sa2v = 3.4  # False
@@ -147,10 +159,10 @@ cfg.epas = -70.00000000000013
 cfg.Cm = 1.0
 cfg.Ra = 100
 if cfg.sa2v:
-    cfg.somaR = (cfg.sa2v * cfg.rs ** 3 / 2.0) ** (1 / 2)
+    cfg.somaR = (cfg.sa2v * cfg.rs**3 / 2.0) ** (1 / 2)
 else:
     cfg.somaR = cfg.rs
-cfg.cyt_fraction = cfg.rs ** 3 / cfg.somaR ** 3
+cfg.cyt_fraction = cfg.rs**3 / cfg.somaR**3
 
 # sd init params
 cfg.k0 = 3.5
@@ -158,8 +170,8 @@ cfg.r0 = 100.0
 
 
 # Scale synapses weights -- optimized
-cfg.excWeight = 0.01 #0.9170195634091205
-cfg.inhWeightScale = 10#9.826449573438962
+cfg.excWeight = 0.01  # 0.9170195634091205
+cfg.inhWeightScale = 10  # 9.826449573438962
 
 
 cfg.weightMin = 0.1
@@ -173,7 +185,7 @@ cfg.ukcc2 = 0.0019830617654271222
 cfg.unkcc1 = 6.506198176269446
 cfg.pmax = 5035.941975532757
 cfg.gpas = 4.2407540290597475e-05
-
+cfg.pumpScale = 1.0
 
 
 cfg.gkleak_scale = 1
@@ -183,24 +195,25 @@ cfg.GliaKKo = 3.5  # 4.938189537703508  # originally 3.5 mM
 cfg.GliaPumpScale = 1 / 3  # 1 / 3  # originally 1/3
 cfg.scaleConnWeight = 1
 
-#converstionFactor: μmol·min−1·mg−1 -> mM/ms
-converstionFactor = 49*9.7e-7/16000 # mg of enzyme/m^3
-converstionFactor *= 60e3 * 1e6 # μmol/min -> mol/ms
-#    1g tissue = 9.7e-7 m^3 
+# converstionFactor: μmol·min−1·mg−1 -> mM/ms
+converstionFactor = 49 * 9.7e-7 / 16000  # mg of enzyme/m^3
+converstionFactor *= 60e3 * 1e6  # μmol/min -> mol/ms
+#    1g tissue = 9.7e-7 m^3
 #    49 units/g  (of tissue) brain
-# 1,600 units/mg (of enzyme) muscle 
+# 1,600 units/mg (of enzyme) muscle
 # unit 1 μmol/min
-cfg.AK = {'KmAMP'   :   0.12, # mM
-          'KiAMP'   :   3.3,  # mM
-          'KmMgATP' :   0.06, # mM
-          'KmADP'   :	0.028,# mM
-          'KiADP'   :   0.91, # mM
-          'KmMgADP' :	0.033,# mM
-          'kp1'	    :   14_000 * converstionFactor, #mM/ms
-          'km1'     :	8_000 * converstionFactor,  #mM/ms
-          'kp2'     :	710  * converstionFactor,   #mM/ms
-          'km2'     :	960 * converstionFactor,    #mM/ms
-          'KMg'     :   2.5,    #/mM (stability constant)
+cfg.AK = {
+    "KmAMP": 0.12,  # mM
+    "KiAMP": 3.3,  # mM
+    "KmMgATP": 0.06,  # mM
+    "KmADP": 0.028,  # mM
+    "KiADP": 0.91,  # mM
+    "KmMgADP": 0.033,  # mM
+    "kp1": 14_000 * converstionFactor,  # mM/ms
+    "km1": 8_000 * converstionFactor,  # mM/ms
+    "kp2": 710 * converstionFactor,  # mM/ms
+    "km2": 960 * converstionFactor,  # mM/ms
+    "KMg": 2.5,  # /mM (stability constant)
 }
 
 
@@ -243,9 +256,9 @@ cfg.simLabel = f"SS_exc{cfg.excWeight}_inh{cfg.inhWeightScale}"
 # Recording and plotting options
 ###########################################################
 
-cfg.recordStep = 0.1 #0.025  # Step size in ms to save data (e.g. V traces, LFP, etc)
+cfg.recordStep = 100  # 0.025  # Step size in ms to save data (e.g. V traces, LFP, etc)
 cfg.filename = cfg.simLabel  # Set file output name
-cfg.saveFolder = "dataSS4/"
+cfg.saveFolder = "dataSS5/"
 cfg.savePickle = False  # Save params, network and sim output to pickle file
 cfg.saveJson = True
 cfg.saveDataInclude = ["simData", "simConfig"]
@@ -317,63 +330,66 @@ cfg.inhWeightScale_L6e = 3.9141625146296994
 cfg.inhWeightScale_L6i = 3.3945419748291674
 
 
-cfg.gnabar = {  'L2e': 0.013775199886666471,
-                'L2i': 0.027571819187312125,
-                'L4e': 0.02266830013423984,
-                'L4i': 0.029102001912798815,
-                'L5e': 0.02535744555783162,
-                'L5i': 0.03081119693176582,
-                'L6e': 0.014647818970212627,
-                'L6i': 0.02446848239757097,
-        }
-cfg.gkbar = {   'L2e': 0.006256129398906307,
-                'L2i': 0.006185825153046352,
-                'L4e': 0.0060870611284361865,
-                'L4i': 0.005724121639411816,
-                'L5e': 0.003982061249246858,
-                'L5i': 0.0055982570786592785,
-                'L6e': 0.005668206201621326,
-                'L6i': 0.005933783169921459,
-        }
-cfg.ukcc2 = {   'L2e': 0.0032046084164501472,
-                'L2i': 0.0031509077144799,
-                'L4e': 0.005288380837054354,
-                'L4i': 0.00478331053234558,
-                'L5e': 0.002703258989241554,
-                'L5i': 0.010726802038549095,
-                'L6e': 0.006728384451439758,
-                'L6i': 0.005139646428462374,
-        }
-cfg.unkcc1 = {  'L2e': 2.9003078243583347,
-                'L2i': 5.162627978681683,
-                'L4e': 5.060143706759098,
-                'L4i': 3.4421630020948286,
-                'L5e': 7.306905091131788,
-                'L5i': 1.6016563592554993,
-                'L6e': 3.070483105176143,
-                'L6i': 2.5419746302997566,
-        }
-cfg.pmax = {    'L2e': 5090.568389284457,
-                'L2i': 4392.347665970014,
-                'L4e': 7010.1014895806475,
-                'L4i': 4076.953587990565,
-                'L5e': 5258.713071981389,
-                'L5i': 7070.669845884245,
-                'L6e': 9419.798954366586,
-                'L6i': 9050.513090329627,
-        }
-cfg.gpas = {    'L2e': 6.183693542550501e-05,
-                'L2i': 2.6478580348538306e-05,
-                'L4e': 2.474426208575386e-05,
-                'L4i': 2.7062297576296835e-05,
-                'L5e': 4.010647009384075e-05,
-                'L5i': 5.412714996482607e-05,
-                'L6e': 3.5297701447167655e-05,
-                'L6i': 3.286565186740838e-05,
-        }
+cfg.gnabar = {
+    "L2e": 0.013775199886666471,
+    "L2i": 0.027571819187312125,
+    "L4e": 0.02266830013423984,
+    "L4i": 0.029102001912798815,
+    "L5e": 0.02535744555783162,
+    "L5i": 0.03081119693176582,
+    "L6e": 0.014647818970212627,
+    "L6i": 0.02446848239757097,
+}
+cfg.gkbar = {
+    "L2e": 0.006256129398906307,
+    "L2i": 0.006185825153046352,
+    "L4e": 0.0060870611284361865,
+    "L4i": 0.005724121639411816,
+    "L5e": 0.003982061249246858,
+    "L5i": 0.0055982570786592785,
+    "L6e": 0.005668206201621326,
+    "L6i": 0.005933783169921459,
+}
+cfg.ukcc2 = {
+    "L2e": 0.0032046084164501472,
+    "L2i": 0.0031509077144799,
+    "L4e": 0.005288380837054354,
+    "L4i": 0.00478331053234558,
+    "L5e": 0.002703258989241554,
+    "L5i": 0.010726802038549095,
+    "L6e": 0.006728384451439758,
+    "L6i": 0.005139646428462374,
+}
+cfg.unkcc1 = {
+    "L2e": 2.9003078243583347,
+    "L2i": 5.162627978681683,
+    "L4e": 5.060143706759098,
+    "L4i": 3.4421630020948286,
+    "L5e": 7.306905091131788,
+    "L5i": 1.6016563592554993,
+    "L6e": 3.070483105176143,
+    "L6i": 2.5419746302997566,
+}
+cfg.pmax = {
+    "L2e": 5090.568389284457,
+    "L2i": 4392.347665970014,
+    "L4e": 7010.1014895806475,
+    "L4i": 4076.953587990565,
+    "L5e": 5258.713071981389,
+    "L5i": 7070.669845884245,
+    "L6e": 9419.798954366586,
+    "L6i": 9050.513090329627,
+}
+cfg.gpas = {
+    "L2e": 6.183693542550501e-05,
+    "L2i": 2.6478580348538306e-05,
+    "L4e": 2.474426208575386e-05,
+    "L4i": 2.7062297576296835e-05,
+    "L5e": 4.010647009384075e-05,
+    "L5i": 5.412714996482607e-05,
+    "L6e": 3.5297701447167655e-05,
+    "L6i": 3.286565186740838e-05,
+}
 
-for k in ['gnabar', 'gkbar', 'ukcc2', 'unkcc1', 'pmax', 'gpas']:
-    setattr(cfg,k, getattr(cfg,k)[cfg.popOpt[0]])
-
-
-
+for k in ["gnabar", "gkbar", "ukcc2", "unkcc1", "pmax", "gpas"]:
+    setattr(cfg, k, getattr(cfg, k)[cfg.popOpt[0]])
